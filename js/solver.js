@@ -2,7 +2,10 @@
 // Chaque borne de dipôle est un nœud ; fils et ampèremètres sont de très petites résistances.
 // Résultats écrits directement dans les objets : el.U, el.I (de la borne 0 vers la borne 1), wire.I (de a vers b).
 window.Solver = (function () {
-  var R_WIRE = 0.005, GMIN = 1e-8;
+  // Fils et générateur quasi idéaux, pour que les mesures tombent juste (les sommes des lois se vérifient à l'affichage).
+  // La résistance interne du générateur (m.r) n'intervient qu'en court-circuit (au-delà de I_SHORT), pour limiter le courant.
+  var R_WIRE = 1e-4, GMIN = 1e-7, R_IDEAL = 1e-3, I_SHORT = 2;
+  function rGen(e, m) { return e._short ? m.r : R_IDEAL; }
 
   function gauss(A, b, n) {
     for (var c = 0; c < n; c++) {
@@ -54,7 +57,7 @@ window.Solver = (function () {
       models.forEach(function (m, k) {
         if (!m) return;
         var a = 2 * k, c = 2 * k + 1;
-        if (m.kind === 'src') stamp(a, c, 1 / m.r, -m.E / m.r);
+        if (m.kind === 'src') { var rg = rGen(dipoles[k], m); stamp(a, c, 1 / rg, -m.E / rg); }
         else if (m.kind === 'R') stamp(a, c, 1 / m.R, 0);
         else if (m.kind === 'led') {
           if (dipoles[k]._on) stamp(a, c, 1 / m.rd, -m.vf / m.rd);
@@ -70,6 +73,13 @@ window.Solver = (function () {
         if (e._on && v < m.vf - 1e-9) { e._on = false; changed = true; }
         else if (!e._on && v > m.vf + 1e-9) { e._on = true; changed = true; }
       });
+      // Générateur en court-circuit : on bascule sur sa résistance interne (avec une marge pour ne pas osciller)
+      models.forEach(function (m, k) {
+        if (!m || m.kind !== 'src') return;
+        var e = dipoles[k], i = Math.abs((V[2 * k] - V[2 * k + 1] - m.E) / rGen(e, m));
+        if (!e._short && i > I_SHORT) { e._short = true; changed = true; }
+        else if (e._short && i < I_SHORT / 2) { e._short = false; changed = true; }
+      });
       if (!changed) break;
     }
 
@@ -77,7 +87,7 @@ window.Solver = (function () {
       var e = dipoles[k], v = V[2 * k] - V[2 * k + 1];
       e.U = v;
       if (!m) e.I = 0;
-      else if (m.kind === 'src') e.I = (v - m.E) / m.r;
+      else if (m.kind === 'src') e.I = (v - m.E) / rGen(e, m);
       else if (m.kind === 'R') e.I = v / m.R;
       else if (m.kind === 'led') e.I = e._on ? (v - m.vf) / m.rd : 0;
     });

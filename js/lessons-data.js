@@ -671,7 +671,7 @@ window.LessonsData = (function () {
             formula: 'U<sub>G</sub> = U<sub>L1</sub> + U<sub>L2</sub>'
           },
           labs: [{
-            caption: '1,79 V + 7,15 V = 8,94 V : la tension du générateur se partage entre les deux lampes.',
+            caption: '1,80 V + 7,20 V = 9,00 V : la tension du générateur se partage entre les deux lampes.',
             circuit: withMeters(L1_TARGET, [
               { name: 'V1', type: 'voltmeter', on: 'G1', dir: [0, -1] },
               { name: 'V2', type: 'voltmeter', on: 'L1', dir: [0, 1] },
