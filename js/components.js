@@ -6,7 +6,7 @@ window.Comp = (function () {
 
   var TYPES = {
     gen:    { name: 'Générateur', prefix: 'G', opts: [3, 6, 9, 12], def: 1, optLabel: 'Tension' },
-    lamp:   { name: 'Lampe', prefix: 'L', opts: [{ u: 3.5, i: .2 }, { u: 6, i: .1 }, { u: 12, i: .1 }], def: 1, optLabel: 'Valeurs nominales' },
+    lamp:   { name: 'Lampe', prefix: 'L', opts: [{ u: 3, i: .2 }, { u: 6, i: .1 }, { u: 12, i: .1 }], def: 1, optLabel: 'Valeurs nominales' },
     res:    { name: 'Résistance', prefix: 'R', opts: [47, 220, 1000], def: 1, optLabel: 'Valeur de la résistance' },
     motor:  { name: 'Moteur', prefix: 'M', opts: [{ u: 3, i: .2 }, { u: 6, i: .3 }, { u: 12, i: .25 }], def: 1, optLabel: 'Valeurs nominales' },
     led:    { name: 'DEL', prefix: 'D', opts: [{ n: 'Rouge', vf: 1.8, c: '#FF5A4E' }, { n: 'Verte', vf: 2.2, c: '#3FD06A' }, { n: 'Bleue', vf: 2.7, c: '#4A8CFF' }], def: 0, optLabel: 'Couleur' },

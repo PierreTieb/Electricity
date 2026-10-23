@@ -1,7 +1,10 @@
 // Contenu du mode Leçon : chaque cours est une suite de consignes vérifiées automatiquement sur le labo.
 // step : { title, text (explication), task (ce qu'il faut faire, rappelé dans le bandeau), how (aide),
-//          palette (éléments disponibles), toggles (cases visibles), set (réglages appliqués au départ),
-//          check(lab) → true quand la tâche est réussie, hold (ms pendant lesquels elle doit le rester) }
+//          circuit (circuit imposé chargé à cette consigne), palette (éléments disponibles), toggles (cases visibles),
+//          fixedTypes (types aux réglages bloqués), set (réglages appliqués au départ), unlock (éléments / 'wires' libérés),
+//          start(lab) → état noté au départ, check(lab, evs, ctx) → true quand la tâche est réussie,
+//          rename(lab) → { ancien: nouveau } : noms du schéma donnés aux dipôles une fois la construction réussie,
+//          hold (ms pendant lesquels elle doit le rester) }
 window.LessonsData = (function () {
   // ---- Petites aides de vérification ----
   function has(lab, type) { return lab.names(type).length > 0; }
@@ -71,6 +74,74 @@ window.LessonsData = (function () {
   }
 
   var NONE = { schema: false, current: false, electrons: false };
+
+  // ---- Cours 7 : lois de l'électricité ----
+  function gen(lab) { return lab.names('gen')[0]; }
+  function lampOf(lab, opt) { return lab.names('lamp').filter(function (n) { return lab.state(n).opt === opt; }); }
+  function U(lab, n) { return n ? lab.state(n).U : null; }
+  function mA(lab, n) { return n ? lab.state(n).I * 1000 : null; }
+  // Schémas de référence (lampes : opt 0 = 3 V, opt 1 = 6 V)
+  var L1_TARGET = {
+    els: [
+      { name: 'G1', type: 'gen', x: 0, y: 0, opt: 2 },
+      { name: 'L1', type: 'lamp', x: -60, y: 150, opt: 0 },
+      { name: 'L2', type: 'lamp', x: 60, y: 150, opt: 1 }
+    ],
+    wires: [['G1.0', 'L1.0'], ['L1.1', 'L2.0'], ['L2.1', 'G1.1']]
+  };
+  // Chaque borne du générateur et la lampe L1 n'ont qu'un fil : on peut mesurer l'intensité
+  // à la sortie du générateur et juste avant L1 (sinon ces fils n'existent pas)
+  var L2_TARGET = {
+    els: [
+      { name: 'G1', type: 'gen', x: 0, y: 0, opt: 1 },
+      { name: 'L2', type: 'lamp', x: -80, y: 130, opt: 0 },
+      { name: 'L3', type: 'lamp', x: 80, y: 130, opt: 0 },
+      { name: 'L1', type: 'lamp', x: 0, y: 240, opt: 1 }
+    ],
+    wires: [['G1.0', 'L2.0'], ['L2.1', 'L3.0'], ['L3.1', 'G1.1'], ['L2.0', 'L1.0'], ['L1.1', 'L3.1']]
+  };
+  // Ajoute des appareils de mesure à un circuit (un ampèremètre prend la place de son fil)
+  function withMeters(c, meters) {
+    var taken = meters.filter(function (m) { return m.between; }).map(function (m) { return m.between.slice().sort().join(); });
+    return {
+      els: c.els.concat(meters),
+      wires: c.wires.filter(function (w) { return taken.indexOf(w.slice().sort().join()) < 0; })
+    };
+  }
+  // Niveau 1 : générateur 9 V, lampes 3 V et 6 V dans une seule boucle
+  function oneLoop(lab) {
+    var g = lab.names('gen'), ls = lab.names('lamp');
+    if (g.length !== 1 || ls.length !== 2 || !lab.loop([g[0], ls[0], ls[1]])) return { ok: false };
+    if (ls.some(function (n) { return lab.state(n).broken; })) return { ok: false, hint: 'Une lampe a grillé : remplace-la depuis sa fenêtre et vérifie les réglages.' };
+    var o = ls.map(function (n) { return lab.state(n).opt; }).sort();
+    if (lab.state(g[0]).opt !== 2 || o[0] !== 0 || o[1] !== 1) return { ok: false, hint: 'Les branchements sont bons : vérifie les réglages (générateur sur 9 V, une lampe de 3 V et une lampe de 6 V).' };
+    // Noms du schéma : L1 = lampe de 3 V, L2 = lampe de 6 V
+    var map = {};
+    map[g[0]] = 'G1'; map[lampOf(lab, 0)[0]] = 'L1'; map[lampOf(lab, 1)[0]] = 'L2';
+    return { ok: lab.closed(), map: map };
+  }
+  // Niveau 2 : une lampe de 6 V en dérivation de deux lampes de 3 V en série, générateur 6 V,
+  // avec un seul fil sur la borne + du générateur et sur la lampe seule (pour les mesures d'intensité)
+  function twoLoops(lab) {
+    var g = lab.names('gen'), ls = lab.names('lamp'), X = null, P = null;
+    if (g.length !== 1 || ls.length !== 3) return { ok: false };
+    ls.forEach(function (x) {
+      var o = ls.filter(function (n) { return n !== x; });
+      if (lab.relation(o[0], o[1]) === 'serie' && lab.relation(x, o[0]) === 'derivation') { X = x; P = o; }
+    });
+    if (!X || !lab.closed()) return { ok: false };
+    if (ls.some(function (n) { return lab.state(n).broken; })) return { ok: false, hint: 'Une lampe a grillé : remplace-la depuis sa fenêtre et vérifie les réglages.' };
+    if (lab.state(g[0]).opt !== 1 || lab.state(X).opt !== 1 || lab.state(P[0]).opt !== 0 || lab.state(P[1]).opt !== 0) {
+      return { ok: false, hint: 'Les branchements sont bons : vérifie les réglages (générateur sur 6 V, lampe seule de 6 V, deux lampes de 3 V en série).' };
+    }
+    var meas = lab.wiresAt(g[0], 0) === 1 && (lab.wiresAt(X, 0) === 1 || lab.wiresAt(X, 1) === 1) && lab.linked(P[0], P[1]);
+    // Noms du schéma : L1 = lampe seule de 6 V, L2 et L3 = lampes de 3 V en série
+    var map = {};
+    map[g[0]] = 'G1'; map[X] = 'L1'; map[P[0]] = 'L2'; map[P[1]] = 'L3';
+    return meas ? { ok: true, map: map } : {
+      ok: false, hint: 'Ton circuit fonctionne, mais on ne pourra pas mesurer toutes les intensités : relie la borne + du générateur par un seul fil, et la lampe de 6 V par un seul fil, comme sur le schéma.'
+    };
+  }
 
   // Circuit de démonstration : générateur, interrupteur et lampe en rectangle
   function basic(closed, extra) {
@@ -366,6 +437,353 @@ window.LessonsData = (function () {
       ]
     },
 
-    { id: 'mesures', title: 'Mesurer tension, intensité et résistance', soon: true }
+    {
+      id: 'mesures', title: 'Mesures des grandeurs', sub: 'Mesurer la tension, l\'intensité et la résistance',
+      // Circuits imposés, dipôles réglables selon la consigne, vues libres ; appareils de mesure débloqués au fil des consignes
+      lab: { ideal: false, electrons: true, toggles: {} },
+      steps: [
+        {
+          title: 'La tension électrique', palette: [], fixedTypes: ['motor', 'lamp', 'res'], hold: 2000,
+          circuit: locked({
+            els: [
+              { name: 'G1', type: 'gen', x: 0, y: 0, opt: 0 },
+              { name: 'K1', type: 'sw', x: 140, y: 80, rot: 90 },
+              { name: 'M1', type: 'motor', x: 0, y: 160 }
+            ],
+            wires: [['G1.1', 'K1.0'], ['K1.1', 'M1.1'], ['M1.0', 'G1.0']]
+          }),
+          text: 'La première grandeur à connaître est la <b>tension électrique</b> : elle correspond à la « force » avec laquelle l\'électricité veut passer. C\'est cette valeur qui est nécessaire au fonctionnement d\'un dipôle.',
+          task: 'Règle la tension du générateur pour alimenter correctement le moteur, puis ferme l\'interrupteur.',
+          how: 'Touche un dipôle pour voir ses réglages et sa tension nominale.',
+          check: function (lab) { var m = lab.state('M1'); return !m.broken && m.ratio >= .7; }
+        },
+        {
+          title: 'Le voltmètre', palette: ['voltmeter'], fixedTypes: ['motor', 'lamp', 'res'], hold: 1500,
+          text: 'Pour mesurer la tension, on utilise un <b>voltmètre</b>, que l\'on branche toujours <b>autour du dipôle</b> à mesurer : on dit qu\'il est branché <b>en dérivation</b>. La tension s\'exprime en <b>volts (V)</b>.',
+          task: 'Sélectionne le voltmètre et place-le autour du moteur : il indique la tension à ses bornes.',
+          check: function (lab) { return lab.names('voltmeter').some(function (v) { return lab.state(v).on === 'M1'; }); }
+        },
+        {
+          title: 'Changer la tension', palette: ['voltmeter'], fixedTypes: ['motor', 'lamp', 'res'], hold: 1500,
+          text: 'Que devient la tension du moteur si on change le réglage du générateur ?',
+          task: 'Augmente un peu la tension du générateur et mesure à nouveau la tension du moteur : tu vas observer des changements.',
+          start: function (lab) { return { opt: lab.state('G1').opt }; },
+          check: function (lab, evs, ctx) {
+            var m = lab.state('M1');
+            return lab.state('G1').opt !== ctx.opt && !m.broken && m.I > 1e-4 &&
+              lab.names('voltmeter').some(function (v) { return lab.state(v).on === 'M1'; });
+          }
+        },
+        {
+          title: 'L\'intensité électrique', palette: ['voltmeter', 'ammeter'], fixedTypes: ['gen', 'motor', 'lamp', 'res'], hold: 1500,
+          circuit: locked({
+            els: [
+              { name: 'G1', type: 'gen', x: 0, y: 0, opt: 2 },
+              { name: 'K1', type: 'sw', x: 180, y: 90, rot: 90 },
+              { name: 'M2', type: 'motor', x: 80, y: 200 },
+              { name: 'M1', type: 'motor', x: -100, y: 200 }
+            ],
+            wires: [['G1.1', 'K1.0'], ['K1.1', 'M2.1'], ['M2.0', 'M1.1'], ['M1.0', 'G1.0']]
+          }),
+          text: 'La deuxième grandeur à connaître est l\'<b>intensité électrique</b> : c\'est le débit de l\'électricité, la vitesse à laquelle elle passe. Elle dépend de la tension appliquée et de la facilité qu\'a l\'électricité à traverser les éléments du circuit.<br>Pour la mesurer, on place un <b>ampèremètre</b> entre deux dipôles : il est branché <b>en série</b>. L\'intensité s\'exprime en <b>ampères (A)</b>.',
+          task: 'Ferme le circuit et mesure l\'intensité électrique entre les deux moteurs.',
+          check: function (lab) {
+            return lab.state('K1').closed && lab.names('ammeter').some(function (a) {
+              var b = lab.state(a).between;
+              return b && /^M/.test(b[0]) && /^M/.test(b[1]);
+            });
+          }
+        },
+        {
+          title: 'Changer le circuit', palette: ['voltmeter', 'ammeter'], fixedTypes: ['gen', 'motor', 'lamp', 'res'], unlock: ['M1', 'M2', 'wires'], hold: 1500,
+          text: 'L\'intensité dépend des dipôles que l\'électricité doit traverser. Que se passe-t-il avec un seul moteur ?',
+          task: 'Supprime un moteur, referme le circuit, puis mesure l\'intensité entre le moteur et l\'interrupteur : tu vas observer des changements.',
+          how: 'Pour supprimer un moteur, fais-le glisser dans la barre de droite.',
+          check: function (lab) {
+            var ms = lab.names('motor');
+            return ms.length === 1 && lab.state(ms[0]).on && lab.names('ammeter').some(function (a) {
+              var b = lab.state(a).between;
+              return b && b.some(function (r) { return r.indexOf(ms[0] + '.') === 0; }) && b.some(function (r) { return r.indexOf('K1.') === 0; });
+            });
+          }
+        },
+        {
+          title: 'La résistance électrique', palette: ['voltmeter', 'ammeter', 'ohmmeter'], fixedTypes: ['gen', 'motor', 'lamp', 'res'], hold: 1500,
+          circuit: (function () {
+            var c = locked({
+              els: [
+                { name: 'G1', type: 'gen', x: 0, y: 0, opt: 3 },
+                { name: 'L1', type: 'lamp', x: -70, y: 150 },
+                { name: 'R1', type: 'res', x: 70, y: 150, opt: 0 }
+              ],
+              wires: []
+            });
+            // Fils libres : il faudra en enlever un pour isoler la résistance
+            c.wires = [{ a: 'G1.0', b: 'L1.0' }, { a: 'L1.1', b: 'R1.0' }, { a: 'R1.1', b: 'G1.1' }];
+            return c;
+          })(),
+          text: 'Il reste la <b>résistance électrique</b> à découvrir : c\'est la capacité d\'un dipôle à <b>freiner</b> l\'électricité. Plus la résistance est grande, plus l\'intensité est faible. Tous les dipôles en ont une, et les résistances sont faites exprès pour ça : les résistances ont une résistance… logique !<br>Pour la mesurer, on branche un <b>ohmmètre</b> sur le dipôle, mais attention : le dipôle doit être <b>hors de tout circuit</b>. La résistance s\'exprime en <b>ohms (Ω)</b>.',
+          task: 'Mesure la résistance de la résistance R1.',
+          how: 'Si l\'ohmmètre affiche « Err », le dipôle est encore alimenté.',
+          check: function (lab) {
+            return lab.names('ohmmeter').some(function (o) {
+              var s = lab.state(o);
+              return s.on === 'R1' && typeof s.value === 'number' && isFinite(s.value);
+            });
+          }
+        },
+        {
+          title: 'Changer la résistance', palette: ['voltmeter', 'ammeter', 'ohmmeter'], fixedTypes: ['gen', 'motor', 'lamp'], hold: 1500,
+          text: 'Une résistance plus grande bloque davantage le passage du courant.',
+          task: 'Augmente la valeur de la résistance R1 et referme le circuit : la lampe devrait beaucoup moins briller.',
+          check: function (lab) { var l = lab.state('L1'); return lab.state('R1').opt > 0 && !l.broken && l.I > 1e-4; }
+        }
+      ],
+      end: 'Bravo ! Tu sais mesurer la tension, l\'intensité et la résistance.',
+      recap: [
+        {
+          text: 'La <b>tension</b> (U) se mesure en <b>volts (V)</b> avec un <b>voltmètre</b>, branché <b>en dérivation</b> aux bornes du dipôle (bornes V et COM). Un dipôle fonctionne normalement quand il reçoit sa tension nominale.',
+          labs: [{
+            caption: 'Le voltmètre est branché autour du moteur : il mesure la tension à ses bornes.',
+            circuit: {
+              els: [{ name: 'G1', type: 'gen', x: 0, y: 0, opt: 1 }, { name: 'M1', type: 'motor', x: 0, y: 150 }, { name: 'V1', type: 'voltmeter', on: 'M1', dir: [0, 1] }],
+              wires: [['G1.0', 'M1.0'], ['M1.1', 'G1.1']]
+            }
+          }]
+        },
+        {
+          text: 'L\'<b>intensité</b> (I) se mesure en <b>ampères (A)</b> avec un <b>ampèremètre</b>, branché <b>en série</b> dans le circuit (bornes A et COM). Elle dépend de la tension et des dipôles que l\'électricité traverse.',
+          labs: [
+            {
+              caption: 'Deux moteurs en série : l\'intensité est plus faible.',
+              circuit: {
+                els: [{ name: 'G1', type: 'gen', x: 0, y: 0, opt: 2 }, { name: 'M1', type: 'motor', x: -60, y: 150 }, { name: 'M2', type: 'motor', x: 60, y: 150 },
+                  { name: 'A1', type: 'ammeter', between: ['M1.1', 'M2.0'] }],
+                wires: [['G1.0', 'M1.0'], ['M2.1', 'G1.1']]
+              }
+            },
+            {
+              caption: 'Un seul moteur : l\'intensité est plus grande.',
+              circuit: {
+                els: [{ name: 'G1', type: 'gen', x: 0, y: 0, opt: 2 }, { name: 'M1', type: 'motor', x: 0, y: 150 }, { name: 'A1', type: 'ammeter', between: ['M1.1', 'G1.1'] }],
+                wires: [['G1.0', 'M1.0']]
+              }
+            }
+          ]
+        },
+        {
+          text: 'La <b>résistance</b> (R) se mesure en <b>ohms (Ω)</b> avec un <b>ohmmètre</b>, sur un dipôle placé <b>hors du circuit</b> (bornes Ω et COM).',
+          labs: [{
+            caption: 'L\'ohmmètre mesure la résistance de R1, isolée de tout circuit.',
+            circuit: { els: [{ name: 'R1', type: 'res', x: 0, y: 0, opt: 0 }, { name: 'O1', type: 'ohmmeter', on: 'R1' }], wires: [] }
+          }]
+        },
+        {
+          text: 'Plus la résistance est <b>grande</b>, plus l\'intensité est <b>faible</b> : la lampe brille moins.',
+          labs: [
+            {
+              caption: 'R1 = 47 Ω : l\'intensité est grande, la lampe brille.',
+              circuit: {
+                els: [{ name: 'G1', type: 'gen', x: 0, y: 0, opt: 3 }, { name: 'L1', type: 'lamp', x: -70, y: 150 }, { name: 'R1', type: 'res', x: 70, y: 150, opt: 0 },
+                  { name: 'A1', type: 'ammeter', between: ['L1.1', 'R1.0'] }],
+                wires: [['G1.0', 'L1.0'], ['R1.1', 'G1.1']]
+              }
+            },
+            {
+              caption: 'R1 = 1 kΩ : l\'intensité est faible, la lampe brille à peine.',
+              circuit: {
+                els: [{ name: 'G1', type: 'gen', x: 0, y: 0, opt: 3 }, { name: 'L1', type: 'lamp', x: -70, y: 150 }, { name: 'R1', type: 'res', x: 70, y: 150, opt: 2 },
+                  { name: 'A1', type: 'ammeter', between: ['L1.1', 'R1.0'] }],
+                wires: [['G1.0', 'L1.0'], ['R1.1', 'G1.1']]
+              }
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      id: 'lois', title: 'Les lois de l\'électricité', sub: 'Lois des tensions et des intensités', level: 1, levelName: 'circuit à une boucle', next: 'lois2',
+      // Construction d'après un schéma, mesures notées dans une fenêtre, puis questions à choix
+      lab: { ideal: false, toggles: {}, fixedTypes: [] },
+      target: L1_TARGET, labels: { G1: 'G1 (9 V)', L1: 'L1 (3 V)', L2: 'L2 (6 V)' },
+      legend: 'Générateur G1 réglé sur 9 V · L1 : lampe de 3 V · L2 : lampe de 6 V',
+      freePalette: ['gen', 'lamp', 'voltmeter', 'ammeter'],
+      steps: [
+        {
+          kind: 'build', title: 'Construction', palette: ['gen', 'lamp'],
+          text: 'Pour découvrir les lois de l\'électricité, on commence par construire un circuit à <b>une seule boucle</b>.',
+          task: 'Construis le circuit du schéma en réglant les dipôles comme indiqué.',
+          how: 'Le schéma reste affiché dans la fenêtre « Schéma à réaliser » ; la disposition peut être différente, seuls les branchements et les réglages comptent.',
+          check: function (lab) { return oneLoop(lab).ok; },
+          rename: function (lab) { return oneLoop(lab).map; },
+          hint: function (lab) { return oneLoop(lab).hint; }
+        },
+        {
+          kind: 'measure', title: 'Mesure des tensions', palette: ['voltmeter'],
+          text: 'On mesure maintenant la tension aux bornes de chaque dipôle.',
+          task: 'À l\'aide du voltmètre, mesure les tensions du générateur et des deux lampes, puis note-les dans l\'encadré.',
+          rows: [
+            { k: 'G', label: 'Tension du générateur G1', unit: 'V', tol: .06 },
+            { k: 'L3', label: 'Tension de la lampe L1 (3 V)', unit: 'V', tol: .06 },
+            { k: 'L6', label: 'Tension de la lampe L2 (6 V)', unit: 'V', tol: .06 }
+          ],
+          expect: function (lab) { return { G: U(lab, gen(lab)), L3: U(lab, lampOf(lab, 0)[0]), L6: U(lab, lampOf(lab, 1)[0]) }; }
+        },
+        {
+          kind: 'quiz', title: 'La loi des tensions', results: 1,
+          question: 'D\'après tes résultats, que peut-on déduire d\'un circuit en série comme celui-ci ?',
+          choices: [
+            'La tension est la même en tous points du circuit.',
+            'La tension aux bornes des dipôles récepteurs correspond toujours à leur tension nominale.',
+            'La somme des tensions des dipôles récepteurs est égale à la tension du générateur.'
+          ],
+          answer: [2], task: 'Réponds à la question à partir de tes mesures.'
+        },
+        {
+          kind: 'measure', title: 'Mesure des intensités', palette: ['ammeter'], restore: 'built',
+          text: 'On retire le voltmètre : place maintenant l\'ampèremètre à différents endroits du circuit.',
+          task: 'À l\'aide de l\'ampèremètre, mesure l\'intensité à différents points du circuit, puis note-les dans l\'encadré.',
+          rows: [
+            { k: 'a', label: 'Entre le générateur et la lampe L1', unit: 'mA', tol: 3 },
+            { k: 'b', label: 'Entre la lampe L1 et la lampe L2', unit: 'mA', tol: 3 },
+            { k: 'c', label: 'Entre la lampe L2 et le générateur', unit: 'mA', tol: 3 }
+          ],
+          expect: function (lab) { var i = mA(lab, gen(lab)); return { a: i, b: i, c: i }; }
+        },
+        {
+          kind: 'quiz', title: 'La loi des intensités', results: 3,
+          question: 'D\'après tes résultats, que peut-on déduire d\'un circuit en série comme celui-ci ?',
+          choices: [
+            'L\'intensité est la même en tous points du circuit.',
+            'L\'intensité augmente à mesure qu\'on s\'éloigne du générateur.',
+            'La somme des intensités des récepteurs est égale à celle du générateur.'
+          ],
+          answer: [0], task: 'Réponds à la question à partir de tes mesures.'
+        }
+      ],
+      end: 'Bravo ! Tu as découvert les deux lois d\'un circuit à une boucle. Prêt pour le niveau 2 ?',
+      recap: [
+        {
+          law: {
+            name: 'Loi d\'additivité des tensions',
+            text: 'Dans un circuit en série (une seule boucle), la tension aux bornes du générateur est égale à la <b>somme des tensions</b> aux bornes des dipôles récepteurs.',
+            formula: 'U<sub>G</sub> = U<sub>L1</sub> + U<sub>L2</sub>'
+          },
+          labs: [{
+            caption: '1,79 V + 7,15 V = 8,94 V : la tension du générateur se partage entre les deux lampes.',
+            circuit: withMeters(L1_TARGET, [
+              { name: 'V1', type: 'voltmeter', on: 'G1', dir: [0, -1] },
+              { name: 'V2', type: 'voltmeter', on: 'L1', dir: [0, 1] },
+              { name: 'V3', type: 'voltmeter', on: 'L2', dir: [0, 1] }])
+          }]
+        },
+        {
+          law: {
+            name: 'Loi d\'unicité de l\'intensité',
+            text: 'Dans un circuit en série (une seule boucle), l\'intensité du courant est <b>la même en tout point</b> du circuit.',
+            formula: 'I = I<sub>1</sub> = I<sub>2</sub> = I<sub>3</sub>'
+          },
+          labs: [{
+            caption: 'Les deux ampèremètres affichent la même intensité, quel que soit l\'endroit de la boucle.',
+            circuit: withMeters(L1_TARGET, [
+              { name: 'A1', type: 'ammeter', between: ['G1.0', 'L1.0'] },
+              { name: 'A2', type: 'ammeter', between: ['L1.1', 'L2.0'] }])
+          }]
+        }
+      ]
+    },
+
+    {
+      id: 'lois2', parent: 'lois', hidden: true, title: 'Les lois de l\'électricité', sub: 'Lois des tensions et des intensités', level: 2, levelName: 'circuit à plusieurs boucles',
+      lab: { ideal: false, toggles: {}, fixedTypes: [] },
+      target: L2_TARGET, labels: { G1: 'G1 (6 V)', L1: 'L1 (6 V)', L2: 'L2 (3 V)', L3: 'L3 (3 V)' },
+      legend: 'Générateur G1 réglé sur 6 V · L1 : lampe de 6 V · L2 et L3 : lampes de 3 V',
+      freePalette: ['gen', 'lamp', 'voltmeter', 'ammeter'],
+      steps: [
+        {
+          kind: 'build', title: 'Construction', palette: ['gen', 'lamp'],
+          text: 'On passe à un circuit à <b>plusieurs boucles</b> : la lampe L1 est branchée en dérivation des lampes L2 et L3, elles-mêmes en série.',
+          task: 'Construis le circuit du schéma en réglant les dipôles comme indiqué.',
+          how: 'Attention : il faudra pouvoir mesurer l\'intensité à la sortie du générateur et juste avant la lampe L1. Respecte bien les branchements du schéma.',
+          check: function (lab) { return twoLoops(lab).ok; },
+          rename: function (lab) { return twoLoops(lab).map; },
+          hint: function (lab) { return twoLoops(lab).hint; }
+        },
+        {
+          kind: 'measure', title: 'Mesure des tensions', palette: ['voltmeter'],
+          text: 'On mesure la tension aux bornes de chaque dipôle.',
+          task: 'À l\'aide du voltmètre, mesure les tensions du générateur et des trois lampes, puis note-les dans l\'encadré.',
+          rows: [
+            { k: 'G', label: 'Tension du générateur G1', unit: 'V', tol: .06 },
+            { k: 'L1', label: 'Tension de la lampe L1 (6 V)', unit: 'V', tol: .06 },
+            { k: 'L2', label: 'Tension de la lampe L2 (3 V)', unit: 'V', tol: .06 },
+            { k: 'L3', label: 'Tension de la lampe L3 (3 V)', unit: 'V', tol: .06 }
+          ],
+          expect: function (lab) { var s = lampOf(lab, 0); return { G: U(lab, gen(lab)), L1: U(lab, lampOf(lab, 1)[0]), L2: U(lab, s[0]), L3: U(lab, s[1]) }; }
+        },
+        {
+          kind: 'quiz', title: 'La loi des tensions', results: 1,
+          question: 'D\'après tes résultats, que peut-on déduire d\'un circuit à plusieurs boucles comme celui-ci ?',
+          choices: [
+            'La somme des tensions des dipôles récepteurs est égale à la tension du générateur.',
+            'La somme des tensions des dipôles d\'une même boucle est égale à celle du générateur.',
+            'La tension totale est la même dans toutes les boucles.'
+          ],
+          answer: [1, 2], task: 'Réponds à la question à partir de tes mesures.'
+        },
+        {
+          kind: 'measure', title: 'Mesure des intensités', palette: ['ammeter'], restore: 'built',
+          text: 'On retire le voltmètre : place maintenant l\'ampèremètre aux endroits indiqués.',
+          task: 'À l\'aide de l\'ampèremètre, mesure l\'intensité aux trois endroits indiqués, puis note-les dans l\'encadré.',
+          rows: [
+            { k: 'g', label: 'À la sortie du générateur', unit: 'mA', tol: 3 },
+            { k: 's', label: 'Entre la lampe L2 et la lampe L3', unit: 'mA', tol: 3 },
+            { k: 'l', label: 'Juste avant la lampe L1', unit: 'mA', tol: 3 }
+          ],
+          expect: function (lab) { return { g: mA(lab, gen(lab)), s: mA(lab, lampOf(lab, 0)[0]), l: mA(lab, lampOf(lab, 1)[0]) }; }
+        },
+        {
+          kind: 'quiz', title: 'La loi des intensités', results: 3,
+          question: 'D\'après tes résultats, que peut-on déduire d\'un circuit à plusieurs boucles comme celui-ci ?',
+          choices: [
+            'L\'intensité est la même en tous points du circuit.',
+            'La somme des intensités des deux boucles est égale à l\'intensité délivrée par le générateur.',
+            'L\'intensité du générateur se divise en deux parts égales s\'il y a deux boucles.'
+          ],
+          answer: [1], task: 'Réponds à la question à partir de tes mesures.'
+        }
+      ],
+      end: 'Bravo ! Tu connais maintenant les quatre lois des tensions et des intensités.',
+      recap: [
+        {
+          law: {
+            name: 'Loi d\'unicité des tensions',
+            text: 'Des branches montées en dérivation ont la <b>même tension</b> à leurs bornes : chacune reçoit la tension du générateur.',
+            formula: 'U<sub>G</sub> = U<sub>L1</sub> = U<sub>L2</sub> + U<sub>L3</sub>'
+          },
+          labs: [{
+            caption: 'La lampe L1 reçoit la même tension que le générateur ; dans l\'autre boucle, L2 et L3 se la partagent.',
+            circuit: withMeters(L2_TARGET, [
+              { name: 'V1', type: 'voltmeter', on: 'G1', dir: [0, -1] },
+              { name: 'V2', type: 'voltmeter', on: 'L1', dir: [0, 1] }])
+          }]
+        },
+        {
+          law: {
+            name: 'Loi d\'additivité des intensités',
+            text: 'L\'intensité dans la <b>branche principale</b> (celle du générateur) est égale à la <b>somme des intensités</b> dans les branches dérivées.',
+            formula: 'I<sub>G</sub> = I<sub>1</sub> + I<sub>2</sub>'
+          },
+          labs: [{
+            caption: 'L\'intensité qui sort du générateur se partage entre les deux boucles, puis se rassemble.',
+            circuit: withMeters(L2_TARGET, [
+              { name: 'A1', type: 'ammeter', between: ['G1.0', 'L2.0'] },
+              { name: 'A2', type: 'ammeter', between: ['L2.1', 'L3.0'] },
+              { name: 'A3', type: 'ammeter', between: ['L2.0', 'L1.0'] }])
+          }]
+        }
+      ]
+    }
   ];
 })();

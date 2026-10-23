@@ -1,62 +1,8 @@
 /* ===== Mode Leçon ===== */
 
-/* Fond de chaque cours : même papier peint, teinté comme le bouton du cours (bronze → vert-de-gris) */
-body[data-theme="ox0"] { --bg-top: #E8DCD1; --bg-bottom: #CFBAA8; }
-body[data-theme="ox1"] { --bg-top: #E4DCCF; --bg-bottom: #CABCA8; }
-body[data-theme="ox2"] { --bg-top: #DFDCCE; --bg-bottom: #C2BFA9; }
-body[data-theme="ox3"] { --bg-top: #DADECF; --bg-bottom: #BAC3AD; }
-body[data-theme="ox4"] { --bg-top: #D5DFD4; --bg-bottom: #B1C5B5; }
-body[data-theme="ox5"] { --bg-top: #D0E1D9; --bg-bottom: #A8C8BC; }
-
-/* Boutons des cours : bronze qui s'oxyde (vert-de-gris) de plus en plus, en teinte et en surface */
+/* Boutons des cours : niveaux d'oxydation dans oxidation.css (généré) */
 .mode-btn--lesson { padding-right: 66px; }
 .mode-btn__kicker { position: relative; z-index: 1; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .72; }
-.mode-btn--ox0 { --c-light: #F8E4D2; --c-mid: #E3B48E; --c-dark: #B07B55; --c-text: #4E2A12; }
-.mode-btn--ox1 { --c-light: #F6E2CF; --c-mid: #DFB28C; --c-dark: #A87C57; --c-text: #4A2B14;
-  background:
-    radial-gradient(ellipse 13% 34% at 93% 80%, rgba(111,191,168,.6), rgba(111,191,168,0) 70%),
-    radial-gradient(ellipse 6% 20% at 3% 16%, rgba(111,191,168,.45), rgba(111,191,168,0) 70%),
-    radial-gradient(circle at 74% 90%, rgba(111,191,168,.5) 0 3px, transparent 4px),
-    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
-.mode-btn--ox2 { --c-light: #F2E0CC; --c-mid: #D9AF8A; --c-dark: #9A7E5A; --c-text: #452C16;
-  background:
-    radial-gradient(ellipse 20% 46% at 92% 76%, rgba(104,188,165,.7), rgba(104,188,165,0) 72%),
-    radial-gradient(ellipse 11% 30% at 4% 20%, rgba(104,188,165,.6), rgba(104,188,165,0) 72%),
-    radial-gradient(ellipse 14% 22% at 48% 102%, rgba(104,188,165,.55), rgba(104,188,165,0) 72%),
-    radial-gradient(ellipse 8% 18% at 70% 4%, rgba(104,188,165,.45), rgba(104,188,165,0) 72%),
-    radial-gradient(circle at 30% 82%, rgba(104,188,165,.55) 0 3px, transparent 4px),
-    radial-gradient(circle at 84% 30%, rgba(104,188,165,.5) 0 2px, transparent 3px),
-    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
-.mode-btn--ox3 { --c-light: #ECDDC8; --c-mid: #CCAE88; --c-dark: #84805E; --c-text: #3B2E18;
-  background:
-    radial-gradient(ellipse 28% 60% at 92% 72%, rgba(98,184,160,.78), rgba(98,184,160,0) 72%),
-    radial-gradient(ellipse 18% 46% at 5% 30%, rgba(98,184,160,.7), rgba(98,184,160,0) 72%),
-    radial-gradient(ellipse 22% 34% at 46% 104%, rgba(98,184,160,.65), rgba(98,184,160,0) 72%),
-    radial-gradient(ellipse 16% 30% at 66% 0%, rgba(98,184,160,.6), rgba(98,184,160,0) 72%),
-    radial-gradient(ellipse 10% 22% at 28% 6%, rgba(98,184,160,.5), rgba(98,184,160,0) 72%),
-    radial-gradient(circle at 58% 66%, rgba(98,184,160,.55) 0 4px, transparent 5px),
-    radial-gradient(circle at 20% 76%, rgba(98,184,160,.55) 0 3px, transparent 4px),
-    linear-gradient(rgba(111,191,168,.16), rgba(111,191,168,.16)),
-    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
-.mode-btn--ox4 { --c-light: #DDE0C8; --c-mid: #B4B892; --c-dark: #6C8468; --c-text: #23392C;
-  background:
-    radial-gradient(ellipse 40% 80% at 90% 62%, rgba(92,178,154,.85), rgba(92,178,154,0) 74%),
-    radial-gradient(ellipse 30% 70% at 6% 40%, rgba(92,178,154,.8), rgba(92,178,154,0) 74%),
-    radial-gradient(ellipse 30% 46% at 48% 100%, rgba(92,178,154,.75), rgba(92,178,154,0) 74%),
-    radial-gradient(ellipse 24% 40% at 56% 0%, rgba(92,178,154,.7), rgba(92,178,154,0) 74%),
-    radial-gradient(ellipse 12% 30% at 30% 30%, rgba(214,165,124,.35), rgba(214,165,124,0) 74%),
-    radial-gradient(circle at 74% 30%, rgba(70,160,138,.6) 0 4px, transparent 5px),
-    radial-gradient(circle at 36% 86%, rgba(70,160,138,.6) 0 3px, transparent 4px),
-    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
-.mode-btn--ox5 { --c-light: #D2EEE4; --c-mid: #86C9B4; --c-dark: #4E9482; --c-text: #163F35;
-  background:
-    radial-gradient(ellipse 16% 34% at 22% 40%, rgba(214,165,124,.5), rgba(214,165,124,0) 72%),
-    radial-gradient(ellipse 9% 22% at 64% 74%, rgba(214,165,124,.42), rgba(214,165,124,0) 72%),
-    radial-gradient(ellipse 30% 60% at 92% 60%, rgba(62,150,128,.55), rgba(62,150,128,0) 74%),
-    radial-gradient(circle at 82% 22%, rgba(52,138,118,.6) 0 4px, transparent 5px),
-    radial-gradient(circle at 44% 18%, rgba(52,138,118,.5) 0 3px, transparent 4px),
-    radial-gradient(circle at 10% 84%, rgba(52,138,118,.5) 0 3px, transparent 4px),
-    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
 .lesson-done {
   position: absolute; right: 18px; top: 50%; transform: translateY(-50%); z-index: 1;
   width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
@@ -75,10 +21,106 @@ body[data-theme="ox5"] { --bg-top: #D0E1D9; --bg-bottom: #A8C8BC; }
   flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; padding: 4px 6px;
   border: none; background: none; text-align: left; cursor: pointer; font: inherit; color: var(--ink); font-weight: 800;
 }
+.lesson-bar { position: relative; }
 .lesson-bar__step {
-  flex: none; min-width: 44px; height: 30px; padding: 0 9px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
+  flex: none; min-width: 44px; height: 30px; padding: 0 8px 0 10px; margin-left: 4px; border: none; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 4px; font: inherit; font-weight: 800;
   font-size: .85rem; background: linear-gradient(160deg, #F8E4D2, #E3B48E); color: #4E2A12; box-shadow: 0 2px 0 #B07B55;
 }
+.lesson-bar__step::after { content: ''; border: 4px solid transparent; border-top-color: currentColor; margin-top: 4px; opacity: .7; }
+
+/* Liste des étapes (ouverte depuis le compteur) */
+.lesson-steps {
+  position: absolute; left: 6px; top: calc(100% + 6px); z-index: 30; min-width: 260px; max-width: calc(100% - 12px);
+  padding: 6px; border-radius: 16px; background: #fff; box-shadow: 0 14px 32px rgba(30,36,44,.22), inset 0 0 0 1px rgba(46,58,70,.1);
+  animation: pop .25s cubic-bezier(.34,1.56,.64,1); transform-origin: top left;
+}
+.lesson-steps[hidden] { display: none; }
+.lesson-steps button {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: none; border-radius: 10px;
+  background: none; cursor: pointer; font: inherit; font-weight: 700; color: var(--ink); text-align: left;
+}
+.lesson-steps button:hover, .lesson-steps button[aria-current="step"] { background: #FBF1E7; }
+.lesson-steps__n {
+  flex: none; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 800; background: #EEF0F2; color: var(--ink-soft);
+}
+.lesson-steps button.done .lesson-steps__n { background: #3FAE6B; color: #fff; }
+.lesson-steps button.locked { cursor: default; color: var(--ink-soft); opacity: .6; }
+.lesson-steps button.locked:hover { background: none; }
+
+/* Fenêtre de travail posée sur le plan de travail (schéma à réaliser, mesures à noter) */
+.lesson-work { position: relative; }
+.lesson-panel {
+  position: absolute; left: 12px; top: 58px; z-index: 20; width: min(330px, calc(100% - 140px));
+  border-radius: 18px; background: rgba(255,255,255,.96); box-shadow: 0 12px 28px rgba(30,36,44,.2), inset 0 0 0 1px rgba(46,58,70,.1);
+  animation: pop .3s cubic-bezier(.34,1.56,.64,1); transform-origin: top left;
+}
+.lesson-panel[hidden] { display: none; }
+.lp-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 8px 8px 14px; font-family: var(--font-display); font-size: 1rem; }
+.lp-fold { width: 30px; height: 30px; border: none; border-radius: 9px; background: #F1F3F5; cursor: pointer; font-size: .9rem; color: var(--ink-soft); transition: transform .2s; }
+.lesson-panel.folded .lp-body { display: none; }
+.lesson-panel.folded .lp-fold { transform: rotate(-90deg); }
+.lp-body { padding: 0 12px 12px; }
+.lp-img { aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; padding: 6px; border-radius: 12px; background: #fff; box-shadow: inset 0 0 0 1px rgba(46,58,70,.12); }
+.lp-img:empty::after { content: ''; width: 22px; height: 22px; border-radius: 50%; border: 3px solid rgba(46,58,70,.2); border-top-color: rgba(46,58,70,.55); animation: spin .8s linear infinite; }
+.lp-img .snap { width: 100%; height: 100%; }
+.lp-legend { margin: 8px 2px 0; font-size: .85rem; font-weight: 800; line-height: 1.4; color: var(--ink); }
+.lp-hint { margin: 8px 0 0; font-size: .82rem; font-weight: 800; line-height: 1.35; color: #A0521D; }
+.lp-hint:empty { display: none; }
+.lp-hint::before { content: '💡 '; }
+.lp-table { width: 100%; border-collapse: collapse; }
+.lp-table th { text-align: left; font-size: .84rem; font-weight: 700; padding: 6px 6px 6px 0; line-height: 1.25; }
+.lp-table td { padding: 4px 0; white-space: nowrap; }
+.lp-table input {
+  width: 74px; font: inherit; font-family: var(--font-display); font-size: 1rem; text-align: center; padding: 5px 6px;
+  border-radius: 10px; border: 2px dashed #B07B55; background: #FBF1E7; color: var(--ink);
+}
+.lp-table input:focus { outline: none; border-style: solid; }
+.lp-table td span { margin-left: 4px; font-weight: 800; font-size: .85rem; color: var(--ink-soft); }
+.lp-mark { width: 22px; text-align: center; font-weight: 800; }
+.lp-table tr.ok input { border: 2px solid #4FBE7A; background: #E5F7EC; }
+.lp-table tr.ok .lp-mark { color: #2F9E5E; }
+.lp-table tr.bad input { border: 2px solid #E9756B; background: #FDECEA; }
+.lp-table tr.bad .lp-mark { color: #D9463B; }
+.lp-actions { display: flex; justify-content: center; margin-top: 10px; }
+.lp-check { min-height: 40px; padding: 8px 22px; --acc-light: #F8E4D2; --acc-mid: #E3B48E; --acc-dark: #B07B55; --acc-text: #4E2A12; }
+.lp-msg { margin: 8px 0 0; min-height: 1.2em; text-align: center; font-size: .85rem; font-weight: 800; color: #A32A20; }
+.lp-msg.ok { color: #1F6E40; }
+
+/* Question à choix */
+.quiz__res { width: 100%; border-collapse: collapse; margin: 10px 0 4px; font-size: .9rem; background: #F4F6F8; border-radius: 14px; overflow: hidden; }
+.quiz__res caption { text-align: left; font-weight: 800; font-size: .8rem; color: var(--ink-soft); padding: 0 2px 4px; text-transform: uppercase; letter-spacing: .06em; }
+.quiz__res th { text-align: left; font-weight: 700; padding: 6px 12px; }
+.quiz__res td { text-align: right; padding: 6px 12px; font-family: var(--font-display); font-weight: 600; white-space: nowrap; }
+.quiz__res tr + tr th, .quiz__res tr + tr td { border-top: 1px dashed rgba(46,58,70,.15); }
+.quiz { display: flex; flex-direction: column; gap: 8px; margin: 8px 0 4px; }
+.quiz__c {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-radius: 14px; cursor: pointer; text-align: left;
+  font: inherit; font-weight: 700; line-height: 1.35; color: var(--ink); background: #F4F6F8; border: 2px solid rgba(46,58,70,.1);
+}
+.quiz__c b { flex: none; width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #fff; box-shadow: inset 0 0 0 1.5px rgba(46,58,70,.2); }
+.quiz__c[aria-pressed="true"] { border-color: #B07B55; background: #FBF1E7; }
+.quiz__c[aria-pressed="true"] b { background: #B07B55; color: #fff; box-shadow: none; }
+.quiz__c.bad { border-color: #E9756B; background: #FDECEA; animation: nudge .4s ease; }
+.quiz__msg { min-height: 1.2em; margin: 4px 0 0; text-align: center; font-weight: 800; color: #A32A20; }
+
+/* Lois dans « À retenir » */
+.law { margin: 4px 0 10px; padding: 12px 14px; border-radius: 16px; background: #FBF1E7; box-shadow: inset 4px 0 0 #B07B55; }
+.law__name { display: block; font-family: var(--font-display); font-size: 1.05rem; color: #6E3F1F; margin-bottom: 4px; }
+.law p { margin: 0 0 6px; line-height: 1.45; }
+.law__f { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; text-align: center; padding: 6px; border-radius: 10px; background: #fff; }
+
+/* Bouton « Niveau 2 » et choix du niveau */
+.lesson-level { --acc-light: #FFF5CC; --acc-mid: #F0D27A; --acc-dark: #BD9634; --acc-text: #4A3600; }
+.level-list { display: flex; flex-direction: column; gap: 10px; margin: 12px 0 4px; }
+.level-btn {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px 48px 12px 14px; border-radius: 16px; cursor: pointer;
+  border: none; font: inherit; text-align: left; color: #4E2A12; background: linear-gradient(160deg, #F8E4D2, #E3B48E); box-shadow: 0 4px 0 #B07B55;
+}
+.level-btn b { font-family: var(--font-display); font-size: 1.05rem; }
+.level-btn span { font-weight: 700; font-size: .9rem; }
+.level-btn i { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; border-radius: 50%; background: #3FAE6B; color: #fff; font-style: normal; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 .lesson-bar__text { font-size: .95rem; line-height: 1.3; }
 .lesson-bar.done { background: rgba(229,247,236,.92); box-shadow: inset 0 0 0 2px rgba(63,174,107,.45), 0 4px 12px rgba(30,36,44,.08); }
 .lesson-bar.done .lesson-bar__step { background: #3FAE6B; color: #fff; box-shadow: 0 2px 0 #2B8050; }
@@ -148,5 +190,8 @@ body[data-theme="ox5"] { --bg-top: #D0E1D9; --bg-bottom: #A8C8BC; }
   #lesson-host .lab-main { height: clamp(300px, calc(100dvh - 200px), 1200px); }
   .mode-btn--lesson { padding-right: 58px; }
   .recap__row { grid-template-columns: 120px 1fr; gap: 10px; }
+  .lesson-panel { top: 50px; left: 8px; width: calc(100% - 104px); }
+  .lp-table th { font-size: .76rem; }
+  .lp-table input { width: 60px; font-size: .92rem; }
   .recap__cap { font-size: .84rem; }
 }

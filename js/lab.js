@@ -1157,6 +1157,8 @@ window.Lab = (function () {
     function clearAll() {
       // Éclair rouge d'une seconde qui s'estompe
       btnClear.classList.remove('flash'); void btnClear.offsetWidth; btnClear.classList.add('flash');
+      // Dans une leçon, le bouton remet le montage du début de la consigne (opts.onClear)
+      if (opts.onClear) { opts.onClear(api); return; }
       clearState();
       fire('clear');
     }
@@ -1331,7 +1333,14 @@ window.Lab = (function () {
     function state(n) {
       var e = byName(n);
       if (!e) return null;
-      if (isM(e)) { var rd = meterRead(e); return { name: e.name, type: e.type, attached: !!e.attach, value: rd.v, text: rd.t }; }
+      if (isM(e)) {
+        // on : dipôle mesuré (voltmètre, ohmmètre) ; between : bornes entre lesquelles l'ampèremètre est inséré
+        var rd = meterRead(e), a = e.attach, t = a && !a.a ? get(a.el) : null;
+        return {
+          name: e.name, type: e.type, attached: !!a, value: rd.v, text: rd.t,
+          on: t ? t.name : null, between: a && a.a ? [refName(a.a), refName(a.b)] : null
+        };
+      }
       var r = e.ratio || 0, on = works(e), level;
       // Niveau : 'hs' (cassé), 'surtension' (> 115 %), 'normal' (≥ 70 % du nominal), 'faible' (sous-alimenté), 'eteint'
       if (e.broken) level = 'hs';
@@ -1411,7 +1420,9 @@ window.Lab = (function () {
       root.className = 'lab' + (ro ? ' lab--ro' : '');
       root.innerHTML =
         '<div class="lab-options">' + chk('schema', 'Vue schéma', st.schema) + chk('current', 'Sens du courant', st.showCur) + chk('electrons', 'Électrons', st.showEl) +
-        (opts.clear === false ? '' : '<button type="button" class="btn-clear" aria-label="Tout effacer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tout effacer</span></button>') +
+        (opts.clear === false ? '' : '<button type="button" class="btn-clear" aria-label="' + (opts.clearLabel || 'Tout effacer') + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' +
+          (opts.onClear ? 'M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4v4h4' : 'M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6') +
+          '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>' + (opts.clearLabel || 'Tout effacer') + '</span></button>') +
         '</div>' +
         '<div class="lab-main"' + (opts.height ? ' style="height:' + opts.height + '"' : '') + '>' +
         '<div class="ws"><svg class="ws-svg" role="application" aria-label="Plan de travail du circuit électrique"></svg>' +
@@ -1498,6 +1509,32 @@ window.Lab = (function () {
         });
       },
       snapshot: snapshot,
+      // Renomme des éléments ({ ancien: nouveau }, tous à la fois : les échanges de noms sont possibles)
+      rename: function (map) {
+        var changed = false;
+        st.els.forEach(function (e) { e._rn = map[e.name] && map[e.name] !== e.name ? map[e.name] : null; });
+        st.els.forEach(function (e) { if (e._rn) { e.name = e._rn; e.dirty = true; changed = true; } delete e._rn; });
+        geom = true;
+        return changed;
+      },
+      // Nombre de fils (ampèremètres compris) branchés sur la borne i d'un dipôle
+      wiresAt: function (n, i) {
+        var e = byName(n);
+        return e ? links().filter(function (l) { return (l.a.el === e.id && l.a.i === i) || (l.b.el === e.id && l.b.i === i); }).length : 0;
+      },
+      // Deux dipôles sont-ils reliés directement par un fil (ou un ampèremètre) ?
+      linked: function (n1, n2) {
+        var a = byName(n1), b = byName(n2);
+        return !!a && !!b && links().some(function (l) { return (l.a.el === a.id && l.b.el === b.id) || (l.a.el === b.id && l.b.el === a.id); });
+      },
+      // Verrouille (ou libère) des éléments par leur nom ; 'wires' désigne tous les fils
+      lock: function (list, locked) {
+        list.forEach(function (n) {
+          if (n === 'wires') st.wires.forEach(function (w) { w.lock = !!locked; });
+          else { var e = byName(n); if (e) { e.lock = !!locked; e.dirty = true; } }
+        });
+        geom = true;
+      },
       modes: function () { return { schema: st.schema, current: st.showCur, electrons: st.showEl }; },
       names: function (type) { return st.els.filter(function (e) { return !type || e.type === type; }).map(function (e) { return e.name; }); }
     };
@@ -1516,6 +1553,7 @@ window.Lab = (function () {
     schema, current, electrons : cases cochées au départ (true / false)
     toggles     : { schema: false, ... } pour cacher une case à cocher
     clear       : false pour cacher le bouton « Tout effacer »
+    onClear(lab), clearLabel : remplacent l'action et le texte de ce bouton (ex. « Recommencer » dans les leçons)
     palette     : ['gen', 'lamp', 'sw', 'voltmeter'] éléments proposés dans la barre (défaut : tous)
     stock       : { lamp: 2, sw: 1 } nombre maximum d'éléments de ce type (affiché « ×2 » dans la barre)
     readOnly    : true = démonstration : on ne peut que manipuler les interrupteurs et ouvrir les « ? »
@@ -1547,5 +1585,9 @@ window.Lab = (function () {
             lab.closed(), lab.shortCircuit(), lab.branches(), lab.names('lamp'), lab.save()
             lab.loop(['G1', 'L1', 'K1']) → ces dipôles forment une boucle complète (vrai même interrupteur ouvert)
             lab.modes() → { schema, current, electrons } cochés ; lab.snapshot() → image SVG fixe du circuit
+            lab.state('V1') → { attached, value, text, on: 'M1' } ; lab.state('A1') → { ..., between: ['M1.1', 'M2.0'] }
+            lab.lock(['M1', 'wires'], false) → libère des éléments (ou tous les fils) en cours de route
+            lab.wiresAt('G1', 0) → nombre de fils sur une borne ; lab.linked('L2', 'L3') → reliés directement par un fil
+            lab.rename({ L3: 'L1', L1: 'L3' }) → renomme des éléments (échanges permis)
   Réglages en direct : lab.set({ schema, current, electrons, readOnly, hideValues, palette, stock, toggles })
 */

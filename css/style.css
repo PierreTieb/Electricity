@@ -148,8 +148,8 @@ body[data-theme="challenge"] { --bg-top: #D8D1B9; --bg-bottom: #B8AE8B; }
 .ws-hint.off { opacity: 0; }
 .toast {
   position: absolute; left: 50%; top: 12px; transform: translate(-50%, -12px); opacity: 0; pointer-events: none;
-  background: rgba(46,58,70,.92); color: #fff; font-weight: 800; font-size: .9rem; padding: 8px 16px; border-radius: 999px;
-  transition: opacity .25s, transform .25s; white-space: nowrap; max-width: 92%; overflow: hidden; text-overflow: ellipsis;
+  background: rgba(46,58,70,.92); color: #fff; font-weight: 800; font-size: .9rem; padding: 8px 16px; border-radius: 18px;
+  transition: opacity .25s, transform .25s; width: max-content; max-width: 80%; text-align: center; line-height: 1.35;
 }
 .toast.on { opacity: 1; transform: translate(-50%, 0); }
 .toast.warn { background: rgba(196,58,40,.94); }

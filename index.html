@@ -10,6 +10,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/lessons.css">
+<link rel="stylesheet" href="css/oxidation.css">
 </head>
 <body data-theme="home">
 
@@ -43,6 +44,9 @@
     <h1 class="app-title">Mode Leçon</h1>
     <p class="app-subtitle">Choisis un cours et suis les instructions</p>
     <div class="mode-list" id="lessons-list"></div>
+    <div class="pop-overlay" id="level-modal" hidden>
+      <div class="pop-card" id="level-card" role="dialog" aria-modal="true"></div>
+    </div>
   </section>
 
   <!-- ÉCRAN : UNE LEÇON (consignes au-dessus d'un plan de travail) -->
@@ -55,13 +59,18 @@
       </div>
     </div>
     <div class="lesson-bar" id="lesson-bar">
+      <button type="button" class="lesson-bar__step" id="lesson-step" aria-haspopup="true" aria-expanded="false" aria-label="Liste des étapes"></button>
       <button type="button" class="lesson-bar__goal" id="lesson-goal" aria-label="Revoir la consigne">
-        <span class="lesson-bar__step" id="lesson-step"></span>
         <span class="lesson-bar__text" id="lesson-task"></span>
       </button>
+      <div class="lesson-steps" id="lesson-steps" hidden></div>
       <button type="button" class="btn-primary lesson-bar__next" id="lesson-next" hidden>Consigne suivante</button>
     </div>
-    <div id="lesson-host"></div>
+    <div class="lesson-work">
+      <div id="lesson-host"></div>
+      <!-- Fenêtre de travail : schéma à réaliser ou mesures à noter -->
+      <div class="lesson-panel" id="lesson-panel" hidden></div>
+    </div>
     <div class="pop-overlay lesson-modal" id="lesson-modal" hidden>
       <div class="pop-card" id="lesson-card" role="dialog" aria-modal="true"></div>
     </div>

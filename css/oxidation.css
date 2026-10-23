@@ -1,0 +1,165 @@
+/* Généré : 10 niveaux d'oxydation (bronze -> vert-de-gris). Ne pas modifier à la main. */
+.mode-btn--ox0 { --c-light: #F8E4D2; --c-mid: #E3B48E; --c-dark: #B07B55; --c-text: #4E2A12;
+  background:
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+.mode-btn--ox1 { --c-light: #F7E4D2; --c-mid: #E1B48F; --c-dark: #AE7C56; --c-text: #4D2A13;
+  background:
+    radial-gradient(ellipse 10% 24% at 93% 80%, rgba(106,187,164,0.49), rgba(106,187,164,0.00) 72%),
+    radial-gradient(ellipse 8% 18% at 4% 18%, rgba(106,187,164,0.49), rgba(106,187,164,0.00) 72%),
+    radial-gradient(circle at 74% 90%, rgba(86,172,150,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 82%, rgba(86,172,150,0.55) 0 3px, transparent 4px),
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+.mode-btn--ox2 { --c-light: #F5E5D3; --c-mid: #DCB691; --c-dark: #A97D58; --c-text: #4A2C15;
+  background:
+    radial-gradient(ellipse 14% 31% at 93% 80%, rgba(100,183,160,0.54), rgba(100,183,160,0.00) 72%),
+    radial-gradient(ellipse 11% 24% at 4% 18%, rgba(100,183,160,0.54), rgba(100,183,160,0.00) 72%),
+    radial-gradient(ellipse 14% 33% at 50% 104%, rgba(100,183,160,0.54), rgba(100,183,160,0.00) 72%),
+    radial-gradient(circle at 74% 90%, rgba(81,168,146,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 82%, rgba(81,168,146,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 30%, rgba(81,168,146,0.55) 0 4px, transparent 5px),
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+.mode-btn--ox3 { --c-light: #F2E5D5; --c-mid: #D5B794; --c-dark: #A17F5C; --c-text: #462D17;
+  background:
+    radial-gradient(ellipse 17% 39% at 93% 80%, rgba(95,179,156,0.58), rgba(95,179,156,0.00) 72%),
+    radial-gradient(ellipse 13% 30% at 4% 18%, rgba(95,179,156,0.58), rgba(95,179,156,0.00) 72%),
+    radial-gradient(ellipse 18% 40% at 50% 104%, rgba(95,179,156,0.58), rgba(95,179,156,0.00) 72%),
+    radial-gradient(ellipse 12% 28% at 70% 2%, rgba(95,179,156,0.58), rgba(95,179,156,0.00) 72%),
+    radial-gradient(ellipse 13% 31% at 22% 96%, rgba(95,179,156,0.58), rgba(95,179,156,0.00) 72%),
+    radial-gradient(circle at 74% 90%, rgba(76,163,141,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 82%, rgba(76,163,141,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 30%, rgba(76,163,141,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 58% 66%, rgba(76,163,141,0.55) 0 2px, transparent 3px),
+    linear-gradient(rgba(95,179,156,0.04), rgba(95,179,156,0.04)),
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+.mode-btn--ox4 { --c-light: #EFE6D6; --c-mid: #CCB997; --c-dark: #988160; --c-text: #402F1B;
+  background:
+    radial-gradient(ellipse 20% 47% at 93% 80%, rgba(89,175,152,0.63), rgba(89,175,152,0.00) 72%),
+    radial-gradient(ellipse 16% 36% at 4% 18%, rgba(89,175,152,0.63), rgba(89,175,152,0.00) 72%),
+    radial-gradient(ellipse 21% 48% at 50% 104%, rgba(89,175,152,0.63), rgba(89,175,152,0.00) 72%),
+    radial-gradient(ellipse 15% 34% at 70% 2%, rgba(89,175,152,0.63), rgba(89,175,152,0.00) 72%),
+    radial-gradient(ellipse 16% 37% at 22% 96%, rgba(89,175,152,0.63), rgba(89,175,152,0.00) 72%),
+    radial-gradient(ellipse 16% 36% at 82% 34%, rgba(89,175,152,0.63), rgba(89,175,152,0.00) 72%),
+    radial-gradient(circle at 74% 90%, rgba(71,159,137,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 82%, rgba(71,159,137,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 30%, rgba(71,159,137,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 58% 66%, rgba(71,159,137,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 20% 76%, rgba(71,159,137,0.55) 0 3px, transparent 4px),
+    linear-gradient(rgba(89,175,152,0.05), rgba(89,175,152,0.05)),
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+.mode-btn--ox5 { --c-light: #EAE8D8; --c-mid: #C2BB9C; --c-dark: #8D8465; --c-text: #3A311E;
+  background:
+    radial-gradient(ellipse 24% 54% at 93% 80%, rgba(84,170,148,0.67), rgba(84,170,148,0.00) 72%),
+    radial-gradient(ellipse 18% 42% at 4% 18%, rgba(84,170,148,0.67), rgba(84,170,148,0.00) 72%),
+    radial-gradient(ellipse 24% 56% at 50% 104%, rgba(84,170,148,0.67), rgba(84,170,148,0.00) 72%),
+    radial-gradient(ellipse 17% 40% at 70% 2%, rgba(84,170,148,0.67), rgba(84,170,148,0.00) 72%),
+    radial-gradient(ellipse 19% 43% at 22% 96%, rgba(84,170,148,0.67), rgba(84,170,148,0.00) 72%),
+    radial-gradient(ellipse 18% 42% at 82% 34%, rgba(84,170,148,0.67), rgba(84,170,148,0.00) 72%),
+    radial-gradient(ellipse 14% 31% at 36% 8%, rgba(84,170,148,0.67), rgba(84,170,148,0.00) 72%),
+    radial-gradient(circle at 74% 90%, rgba(67,155,133,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 82%, rgba(67,155,133,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 30%, rgba(67,155,133,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 58% 66%, rgba(67,155,133,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 20% 76%, rgba(67,155,133,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 44% 18%, rgba(67,155,133,0.55) 0 4px, transparent 5px),
+    linear-gradient(rgba(84,170,148,0.07), rgba(84,170,148,0.07)),
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+.mode-btn--ox6 { --c-light: #E5E9DB; --c-mid: #B6BEA1; --c-dark: #80876B; --c-text: #333423;
+  background:
+    radial-gradient(ellipse 27% 62% at 93% 80%, rgba(78,166,144,0.72), rgba(78,166,144,0.00) 72%),
+    radial-gradient(ellipse 21% 48% at 4% 18%, rgba(78,166,144,0.72), rgba(78,166,144,0.00) 72%),
+    radial-gradient(ellipse 28% 64% at 50% 104%, rgba(78,166,144,0.72), rgba(78,166,144,0.00) 72%),
+    radial-gradient(ellipse 20% 45% at 70% 2%, rgba(78,166,144,0.72), rgba(78,166,144,0.00) 72%),
+    radial-gradient(ellipse 21% 49% at 22% 96%, rgba(78,166,144,0.72), rgba(78,166,144,0.00) 72%),
+    radial-gradient(ellipse 21% 48% at 82% 34%, rgba(78,166,144,0.72), rgba(78,166,144,0.00) 72%),
+    radial-gradient(ellipse 15% 36% at 36% 8%, rgba(78,166,144,0.72), rgba(78,166,144,0.00) 72%),
+    radial-gradient(circle at 74% 90%, rgba(62,151,129,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 82%, rgba(62,151,129,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 30%, rgba(62,151,129,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 58% 66%, rgba(62,151,129,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 20% 76%, rgba(62,151,129,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 44% 18%, rgba(62,151,129,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 10% 50%, rgba(62,151,129,0.55) 0 2px, transparent 3px),
+    linear-gradient(rgba(78,166,144,0.08), rgba(78,166,144,0.08)),
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+.mode-btn--ox7 { --c-light: #E0EADD; --c-mid: #A8C1A6; --c-dark: #728B71; --c-text: #2B3728;
+  background:
+    radial-gradient(ellipse 30% 70% at 93% 80%, rgba(73,162,140,0.76), rgba(73,162,140,0.00) 72%),
+    radial-gradient(ellipse 24% 54% at 4% 18%, rgba(73,162,140,0.76), rgba(73,162,140,0.00) 72%),
+    radial-gradient(ellipse 31% 72% at 50% 104%, rgba(73,162,140,0.76), rgba(73,162,140,0.00) 72%),
+    radial-gradient(ellipse 22% 51% at 70% 2%, rgba(73,162,140,0.76), rgba(73,162,140,0.00) 72%),
+    radial-gradient(ellipse 24% 55% at 22% 96%, rgba(73,162,140,0.76), rgba(73,162,140,0.00) 72%),
+    radial-gradient(ellipse 23% 53% at 82% 34%, rgba(73,162,140,0.76), rgba(73,162,140,0.00) 72%),
+    radial-gradient(ellipse 17% 40% at 36% 8%, rgba(73,162,140,0.76), rgba(73,162,140,0.00) 72%),
+    radial-gradient(ellipse 24% 55% at 6% 70%, rgba(73,162,140,0.76), rgba(73,162,140,0.00) 72%),
+    radial-gradient(ellipse 18% 42% at 62% 60%, rgba(73,162,140,0.76), rgba(73,162,140,0.00) 72%),
+    radial-gradient(circle at 74% 90%, rgba(57,146,124,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 82%, rgba(57,146,124,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 30%, rgba(57,146,124,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 58% 66%, rgba(57,146,124,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 20% 76%, rgba(57,146,124,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 44% 18%, rgba(57,146,124,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 10% 50%, rgba(57,146,124,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 66% 24%, rgba(57,146,124,0.55) 0 3px, transparent 4px),
+    radial-gradient(ellipse 14% 31% at 22% 40%, rgba(214,165,124,.5), rgba(214,165,124,0) 72%),
+    linear-gradient(rgba(73,162,140,0.09), rgba(73,162,140,0.09)),
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+.mode-btn--ox8 { --c-light: #DAECE0; --c-mid: #99C5AC; --c-dark: #628F79; --c-text: #223B2E;
+  background:
+    radial-gradient(ellipse 34% 77% at 93% 80%, rgba(67,158,136,0.81), rgba(67,158,136,0.00) 72%),
+    radial-gradient(ellipse 26% 60% at 4% 18%, rgba(67,158,136,0.81), rgba(67,158,136,0.00) 72%),
+    radial-gradient(ellipse 35% 80% at 50% 104%, rgba(67,158,136,0.81), rgba(67,158,136,0.00) 72%),
+    radial-gradient(ellipse 25% 56% at 70% 2%, rgba(67,158,136,0.81), rgba(67,158,136,0.00) 72%),
+    radial-gradient(ellipse 27% 61% at 22% 96%, rgba(67,158,136,0.81), rgba(67,158,136,0.00) 72%),
+    radial-gradient(ellipse 26% 59% at 82% 34%, rgba(67,158,136,0.81), rgba(67,158,136,0.00) 72%),
+    radial-gradient(ellipse 19% 44% at 36% 8%, rgba(67,158,136,0.81), rgba(67,158,136,0.00) 72%),
+    radial-gradient(ellipse 27% 61% at 6% 70%, rgba(67,158,136,0.81), rgba(67,158,136,0.00) 72%),
+    radial-gradient(ellipse 20% 47% at 62% 60%, rgba(67,158,136,0.81), rgba(67,158,136,0.00) 72%),
+    radial-gradient(circle at 74% 90%, rgba(52,142,120,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 82%, rgba(52,142,120,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 30%, rgba(52,142,120,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 58% 66%, rgba(52,142,120,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 20% 76%, rgba(52,142,120,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 44% 18%, rgba(52,142,120,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 10% 50%, rgba(52,142,120,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 66% 24%, rgba(52,142,120,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 88% 58%, rgba(52,142,120,0.55) 0 4px, transparent 5px),
+    radial-gradient(ellipse 14% 31% at 22% 40%, rgba(214,165,124,.5), rgba(214,165,124,0) 72%),
+    radial-gradient(ellipse 10% 22% at 64% 74%, rgba(214,165,124,.5), rgba(214,165,124,0) 72%),
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+.mode-btn--ox9 { --c-light: #D3EEE3; --c-mid: #89C8B3; --c-dark: #519381; --c-text: #183E34;
+  background:
+    radial-gradient(ellipse 37% 85% at 93% 80%, rgba(62,154,132,0.85), rgba(62,154,132,0.00) 72%),
+    radial-gradient(ellipse 29% 66% at 4% 18%, rgba(62,154,132,0.85), rgba(62,154,132,0.00) 72%),
+    radial-gradient(ellipse 38% 88% at 50% 104%, rgba(62,154,132,0.85), rgba(62,154,132,0.00) 72%),
+    radial-gradient(ellipse 27% 62% at 70% 2%, rgba(62,154,132,0.85), rgba(62,154,132,0.00) 72%),
+    radial-gradient(ellipse 29% 67% at 22% 96%, rgba(62,154,132,0.85), rgba(62,154,132,0.00) 72%),
+    radial-gradient(ellipse 28% 65% at 82% 34%, rgba(62,154,132,0.85), rgba(62,154,132,0.00) 72%),
+    radial-gradient(ellipse 21% 49% at 36% 8%, rgba(62,154,132,0.85), rgba(62,154,132,0.00) 72%),
+    radial-gradient(ellipse 29% 67% at 6% 70%, rgba(62,154,132,0.85), rgba(62,154,132,0.00) 72%),
+    radial-gradient(ellipse 22% 52% at 62% 60%, rgba(62,154,132,0.85), rgba(62,154,132,0.00) 72%),
+    radial-gradient(circle at 74% 90%, rgba(47,138,116,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 30% 82%, rgba(47,138,116,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 84% 30%, rgba(47,138,116,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 58% 66%, rgba(47,138,116,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 20% 76%, rgba(47,138,116,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 44% 18%, rgba(47,138,116,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 10% 50%, rgba(47,138,116,0.55) 0 2px, transparent 3px),
+    radial-gradient(circle at 66% 24%, rgba(47,138,116,0.55) 0 3px, transparent 4px),
+    radial-gradient(circle at 88% 58%, rgba(47,138,116,0.55) 0 4px, transparent 5px),
+    radial-gradient(circle at 36% 60%, rgba(47,138,116,0.55) 0 2px, transparent 3px),
+    radial-gradient(ellipse 14% 31% at 22% 40%, rgba(214,165,124,.5), rgba(214,165,124,0) 72%),
+    radial-gradient(ellipse 10% 22% at 64% 74%, rgba(214,165,124,.5), rgba(214,165,124,0) 72%),
+    radial-gradient(ellipse 8% 18% at 40% 12%, rgba(214,165,124,.5), rgba(214,165,124,0) 72%),
+    linear-gradient(160deg, var(--c-light) 0%, var(--c-mid) 62%, var(--c-light) 100%); }
+
+/* Fond de chaque cours : même papier peint, teinté comme le bouton du cours */
+body[data-theme="ox0"] { --bg-top: #E8DCD1; --bg-bottom: #CFBAA8; }
+body[data-theme="ox1"] { --bg-top: #E5DDD2; --bg-bottom: #CBBCAA; }
+body[data-theme="ox2"] { --bg-top: #E3DDD3; --bg-bottom: #C6BDAC; }
+body[data-theme="ox3"] { --bg-top: #E0DED4; --bg-bottom: #C2BFAF; }
+body[data-theme="ox4"] { --bg-top: #DDDED5; --bg-bottom: #BEC0B1; }
+body[data-theme="ox5"] { --bg-top: #DBDFD5; --bg-bottom: #B9C2B3; }
+body[data-theme="ox6"] { --bg-top: #D8DFD6; --bg-bottom: #B5C3B5; }
+body[data-theme="ox7"] { --bg-top: #D5E0D7; --bg-bottom: #B1C5B8; }
+body[data-theme="ox8"] { --bg-top: #D3E0D8; --bg-bottom: #ACC6BA; }
+body[data-theme="ox9"] { --bg-top: #D0E1D9; --bg-bottom: #A8C8BC; }
