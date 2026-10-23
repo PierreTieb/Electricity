@@ -88,5 +88,28 @@ window.Solver = (function () {
     return { V: V, node: node };
   }
 
-  return { solve: solve };
+  // Résistance vue par un ohmmètre entre les bornes de « target » : on injecte 1 A,
+  // les générateurs et les DEL ne laissent pas passer le petit courant de l'ohmmètre.
+  function resistance(dipoles, links, target) {
+    var idx = {};
+    dipoles.forEach(function (e, k) { idx[e.id] = k; });
+    var n = dipoles.length * 2, A = [], b = new Float64Array(n);
+    for (var r = 0; r < n; r++) { A.push(new Float64Array(n)); A[r][r] = GMIN; }
+    function stamp(a, c, g) {
+      if (a < 0 || c < 0) return;
+      A[a][a] += g; A[c][c] += g; A[a][c] -= g; A[c][a] -= g;
+    }
+    function node(ref) { return idx[ref.el] == null ? -1 : idx[ref.el] * 2 + ref.i; }
+    dipoles.forEach(function (e, k) {
+      var m = Comp.model(e);
+      if (m && m.kind === 'R') stamp(2 * k, 2 * k + 1, 1 / m.R);
+    });
+    links.forEach(function (l) { stamp(node(l.a), node(l.b), 1 / R_WIRE); });
+    var t = idx[target.id] * 2;
+    b[t] = 1; b[t + 1] = -1;
+    var V = gauss(A, b, n);
+    return V[t] - V[t + 1];
+  }
+
+  return { solve: solve, resistance: resistance };
 })();

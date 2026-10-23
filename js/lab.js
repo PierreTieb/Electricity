@@ -49,16 +49,6 @@ window.Lab = (function () {
     }
     return { x: p[0][0], y: p[0][1], dx: 1, dy: 0 };
   }
-  function slice(p, s0, s1) {
-    var out = [], acc = 0, a = pAt(p, s0);
-    out.push([a.x, a.y]);
-    for (var i = 1; i < p.length; i++) {
-      acc += dist(p[i - 1], p[i]);
-      if (acc > s0 && acc < s1) out.push(p[i]);
-    }
-    var b = pAt(p, s1); out.push([b.x, b.y]);
-    return out;
-  }
   function closest(p, q) {
     var best = { d: 1e9, s: 0 }, acc = 0;
     for (var i = 1; i < p.length; i++) {
@@ -224,10 +214,6 @@ window.Lab = (function () {
     st.els.forEach(function (m) { if (m.type === 'ammeter' && m.attach && (m.attach.a.el === id || m.attach.b.el === id)) n++; });
     return n;
   }
-  function wiredTo(id) {
-    return st.wires.some(function (w) { return w.a.el === id || w.b.el === id; }) ||
-      st.els.some(function (m) { return m.type === 'ammeter' && m.attach && (m.attach.a.el === id || m.attach.b.el === id); });
-  }
 
   // Oriente le dipôle fraîchement relié pour que le fil suive au mieux les règles du schéma
   function autoOrient(a, b) {
@@ -302,20 +288,19 @@ window.Lab = (function () {
     if (m.type === 'ammeter') {
       var A = m.attach;
       if (!get(A.a.el) || !get(A.b.el)) { m.attach = null; g.M = [m.px, m.py]; return g; }
-      var pts = wroute(A.a, A.b), L = plen(pts), sc = A.f * L, at = pAt(pts, sc);
+      var pts = wroute(A.a, A.b), at = pAt(pts, A.f * plen(pts));
       g.route = pts; g.M = [at.x, at.y];
-      var gap = st.schema ? 0 : (Math.abs(at.dx) > .5 ? 31 : 39) + 8;
-      var s1 = Math.max(0, sc - gap), s2 = Math.min(L, sc + gap);
-      g.part1 = slice(pts, 0, s1); g.part2 = slice(pts, s2, L);
       if (!st.schema) {
-        var P1 = pAt(pts, s1), P2 = pAt(pts, s2), redFirst = (m.I || 0) >= 0;
+        // Les cordons rouge et noir remplacent tout le fil : ils partent directement des bornes des dipôles
+        var ea = get(A.a.el), eb = get(A.b.el), redFirst = (m.I || 0) >= 0;
+        var Pa = term(ea, A.a.i), da = tdir(A.a.i, ea.ang), Pb = term(eb, A.b.i), db = tdir(A.b.i, eb.ang);
         var red = [at.x - 12, at.y + 25], blk = [at.x + 12, at.y + 25];
         var S1 = redFirst ? red : blk, S2 = redFirst ? blk : red;
-        var l1 = cub([P1.x, P1.y], [P1.x + P1.dx * 24, P1.y + P1.dy * 24], [S1[0], S1[1] + 36], S1, 18);
-        var l2 = cub([P2.x, P2.y], [P2.x - P2.dx * 24, P2.y - P2.dy * 24], [S2[0], S2[1] + 36], S2, 18);
+        var l1 = cub(Pa, [Pa[0] + da[0] * 45, Pa[1] + da[1] * 45], [S1[0], S1[1] + 42], S1, 26);
+        var l2 = cub(Pb, [Pb[0] + db[0] * 45, Pb[1] + db[1] * 45], [S2[0], S2[1] + 42], S2, 26);
         g.leads.push({ pts: l1, red: redFirst }, { pts: l2, red: !redFirst });
-        g.cond = [{ key: 'a' + m.id + 'x', pts: g.part1.concat(l1), I: m.I || 0 },
-          { key: 'a' + m.id + 'y', pts: l2.slice().reverse().concat(g.part2), I: m.I || 0 }];
+        g.cond = [{ key: 'a' + m.id + 'x', pts: l1, I: m.I || 0 },
+          { key: 'a' + m.id + 'y', pts: l2.slice().reverse(), I: m.I || 0 }];
       }
       return g;
     }
@@ -346,11 +331,14 @@ window.Lab = (function () {
   }
 
   /* ================= Résolution électrique ================= */
+  function links() {
+    var l = st.wires.map(function (w) { return { a: w.a, b: w.b, obj: w }; });
+    st.els.forEach(function (m) { if (m.type === 'ammeter' && m.attach) l.push({ a: m.attach.a, b: m.attach.b, obj: m }); });
+    return l;
+  }
   function doSolve() {
     var dips = dipoles();
-    var links = st.wires.map(function (w) { return { a: w.a, b: w.b, obj: w }; });
-    st.els.forEach(function (m) { if (m.type === 'ammeter' && m.attach) links.push({ a: m.attach.a, b: m.attach.b, obj: m }); });
-    sol = Solver.solve(dips, links);
+    sol = Solver.solve(dips, links());
     dips.forEach(function (e) { e.ratio = C.loadRatio(e); });
     geom = true;
   }
@@ -418,12 +406,7 @@ window.Lab = (function () {
       hh += '<path class="wire-hit" data-act="wire" data-id="' + w.id + '" d="' + polyD(w._pts) + '" fill="none" stroke="#000" stroke-opacity="0" stroke-width="18"/>';
     });
     st.els.forEach(function (m) {
-      if (m.type !== 'ammeter' || !m.attach || !m._g || !m._g.route) return;
-      var g = m._g;
-      if (st.schema) h += wireSVG(g.route, 0, false);
-      else {
-        h += wireSVG(g.part1, 0, false) + wireSVG(g.part2, 0, false) + plug(g.route[0]) + plug(g.route[g.route.length - 1]);
-      }
+      if (st.schema && m.type === 'ammeter' && m.attach && m._g && m._g.route) h += wireSVG(m._g.route, 0, false);
     });
     Lw.innerHTML = h; Lwh.innerHTML = hh;
   }
@@ -465,8 +448,13 @@ window.Lab = (function () {
     st.wires.forEach(function (w) { h += arrowOn(w._pts, w.I); });
     st.els.forEach(function (m) {
       if (m.type !== 'ammeter' || !m.attach || !m._g || !m._g.route) return;
-      var g = m._g, p = plen(g.part1) >= plen(g.part2) ? g.part1 : g.part2;
-      h += arrowOn(st.schema ? g.route : p, m.I || 0);
+      var g = m._g, I = m.I || 0;
+      if (st.schema) h += arrowOn(g.route, I);
+      else if (Math.abs(I) >= 1e-4) {
+        // Flèche au milieu du cordon par lequel le courant arrive
+        var q = pAt(g.leads[0].pts, plen(g.leads[0].pts) / 2), s = I > 0 ? 1 : -1;
+        h += arrowAt(q.x, q.y, q.dx * s, q.dy * s);
+      }
     });
     La.innerHTML = h;
   }
@@ -735,9 +723,10 @@ window.Lab = (function () {
     var t = get(m.attach.el);
     if (!t) return '---';
     if (m.type === 'voltmeter') return fmtU(pot(t, 0) - pot(t, 1));
-    if (wiredTo(t.id)) return 'Err';
-    var v = C.ohmValue(t);
-    return typeof v === 'string' ? v : fmtR(v);
+    // L'ohmmètre ne supporte pas un dipôle alimenté (tension à ses bornes ou courant qui le traverse)
+    if (t.type === 'gen' || Math.abs(t.U || 0) > 1e-3 || Math.abs(t.I || 0) > 1e-5) return 'Err';
+    var R = Solver.resistance(dipoles(), links(), t);
+    return R > 1e6 ? 'OL' : fmtR(R);
   }
   function updateLcd(m) {
     var s = meterText(m);

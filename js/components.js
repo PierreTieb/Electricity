@@ -51,21 +51,6 @@ window.Comp = (function () {
   }
   function canBreak(type) { return type === 'lamp' || type === 'motor' || type === 'res' || type === 'led'; }
 
-  // Valeur lue par l'ohmmètre (nombre, 'OL' ou 'Err')
-  function ohmValue(el) {
-    if (el.type === 'gen') return 'Err';
-    if (el.broken) return 'OL';
-    var o = opt(el);
-    switch (el.type) {
-      case 'lamp': case 'motor': return o.u / o.i;
-      case 'res': return o;
-      case 'buzzer': return BUZ_R;
-      case 'led': return 'OL';
-      case 'sw': return el.closed ? 0.1 : 'OL';
-    }
-    return 'OL';
-  }
-
   function optText(type, o) {
     switch (type) {
       case 'gen': return [o + ' V', ''];
@@ -323,13 +308,13 @@ window.Comp = (function () {
     ohmmeter: {
       intro: 'La <b>résistance</b> est la capacité d\'un dipôle récepteur à bloquer le passage de l\'électricité. L\'ohmmètre envoie lui-même un petit courant dans le dipôle.',
       rows: [['Grandeur', 'Résistance <b>R</b>'], ['Unité', 'Ohm (<b>Ω</b>)'], ['Branchement', 'Sur un récepteur <b>hors du circuit</b>'], ['Bornes', '<b>Ω</b> et <b>COM</b>'], ['Calibre', 'Le symbole <b>Ω</b>']],
-      tip: 'Approche-le d\'un dipôle débranché. S\'il est relié au circuit, l\'écran affiche « Err ».'
+      tip: 'Approche-le d\'un dipôle qui n\'est pas alimenté. Si le dipôle reçoit du courant, l\'écran affiche « Err ». Attention : s\'il est encore relié à d\'autres récepteurs, l\'ohmmètre les mesure aussi.'
     }
   };
 
   return {
     T: T, TYPES: TYPES, DIPOLES: DIPOLES, METERS: METERS,
-    isMeter: isMeter, opt: opt, model: model, loadRatio: loadRatio, canBreak: canBreak, ohmValue: ohmValue,
+    isMeter: isMeter, opt: opt, model: model, loadRatio: loadRatio, canBreak: canBreak,
     optText: optText, num: num, draw: draw, bbox: bbox, defs: defs, mix: mix, ramp: ramp,
     INFO: INFO, FICHE: FICHE, LED_I: LED_I
   };
