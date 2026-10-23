@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/lessons.css">
 </head>
 <body data-theme="home">
 
@@ -18,9 +19,9 @@
     <p class="app-subtitle">Tout ce qu'il faut savoir sur l'électricité au collège</p>
 
     <div class="mode-list">
-      <button type="button" id="btn-lessons" class="mode-btn mode-btn--bronze mode-btn--icon" aria-disabled="true">
+      <button type="button" id="btn-lessons" class="mode-btn mode-btn--bronze mode-btn--icon">
         <span class="mode-btn__title">Leçons</span>
-        <span class="mode-btn__subtitle">Prochainement...</span>
+        <span class="mode-btn__subtitle">Apprendre pas à pas les propriétés et les lois de l'électricité</span>
         <svg class="mode-btn__ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 10q8-3 16 2v28q-8-5-16-2z" fill="#fff" fill-opacity=".55"/><path d="M40 10q-8-3-16 2v28q8-5 16-2z" fill="#fff" fill-opacity=".35"/><path d="M8 10q8-3 16 2 8-5 16-2v28q-8-3-16 2-8-5-16-2z" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"/><path d="M24 12v28" stroke="currentColor" stroke-width="2.2"/></svg>
       </button>
       <button type="button" id="btn-lab" class="mode-btn mode-btn--silver mode-btn--icon">
@@ -36,6 +37,39 @@
     </div>
   </section>
 
+  <!-- ÉCRAN : MENU DES LEÇONS -->
+  <section id="screen-lessons" class="screen">
+    <button type="button" class="btn-back" id="btn-back-lessons">← Retour</button>
+    <h1 class="app-title">Mode Leçon</h1>
+    <p class="app-subtitle">Choisis un cours et suis les instructions</p>
+    <div class="mode-list" id="lessons-list"></div>
+  </section>
+
+  <!-- ÉCRAN : UNE LEÇON (consignes au-dessus d'un plan de travail) -->
+  <section id="screen-lesson" class="screen screen--lab">
+    <div class="lab-head">
+      <button type="button" class="btn-back btn-quit" id="btn-quit-lesson">✕ Quitter</button>
+      <div class="lab-head__titles">
+        <p class="lesson-kicker" id="lesson-kicker"></p>
+        <h1 class="app-title app-title--small" id="lesson-title"></h1>
+      </div>
+    </div>
+    <div class="lesson-bar" id="lesson-bar">
+      <button type="button" class="lesson-bar__goal" id="lesson-goal" aria-label="Revoir la consigne">
+        <span class="lesson-bar__step" id="lesson-step"></span>
+        <span class="lesson-bar__text" id="lesson-task"></span>
+      </button>
+      <button type="button" class="btn-primary lesson-bar__next" id="lesson-next" hidden>Consigne suivante</button>
+    </div>
+    <div id="lesson-host"></div>
+    <div class="pop-overlay lesson-modal" id="lesson-modal" hidden>
+      <div class="pop-card" id="lesson-card" role="dialog" aria-modal="true"></div>
+    </div>
+    <div class="lesson-badge" id="lesson-badge" hidden aria-hidden="true">
+      <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#3FAE6B"/><circle cx="32" cy="32" r="30" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><path d="M19 33l9 9 17-19" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </section>
+
   <!-- ÉCRAN : LABORATOIRE -->
   <section id="screen-lab" class="screen screen--lab">
     <div class="lab-head">
@@ -46,46 +80,16 @@
       </div>
     </div>
 
-    <div class="lab-options">
-      <label class="chk"><input type="checkbox" id="opt-schema"><span class="chk__box" aria-hidden="true"></span>Vue schéma</label>
-      <label class="chk"><input type="checkbox" id="opt-current"><span class="chk__box" aria-hidden="true"></span>Sens du courant</label>
-      <label class="chk"><input type="checkbox" id="opt-electrons"><span class="chk__box" aria-hidden="true"></span>Électrons</label>
-      <button type="button" class="btn-clear" id="btn-clear" aria-label="Tout effacer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Tout effacer</span></button>
-    </div>
-
-    <div class="lab-main">
-      <div class="ws" id="ws">
-        <svg id="ws-svg" class="ws-svg" role="application" aria-label="Plan de travail du circuit électrique"></svg>
-        <div class="ws-hint" id="ws-hint">Choisis un élément dans la barre de droite<br>puis relie les bornes en tirant un fil.</div>
-        <div class="toast" id="toast" aria-live="polite"></div>
-      </div>
-
-      <aside class="bar" id="bar" aria-label="Éléments disponibles">
-        <div class="bar__tabs" role="tablist">
-          <button type="button" role="tab" class="bar__tab" data-tab="dipoles" aria-selected="true">Dipôles</button>
-          <button type="button" role="tab" class="bar__tab" data-tab="mesures" aria-selected="false">Mesures</button>
-        </div>
-        <div class="bar__list" id="bar-list"></div>
-        <div class="bar__trash" aria-hidden="true">Relâche pour retirer</div>
-      </aside>
-    </div>
-
-    <!-- Fenêtre « ? » -->
-    <div class="pop-overlay" id="pop" hidden>
-      <div class="pop-card" role="dialog" aria-modal="true" aria-labelledby="pop-title">
-        <div class="pop-head">
-          <svg class="pop-ico" id="pop-ico" viewBox="-60 -50 120 100" aria-hidden="true"></svg>
-          <h2 class="pop-title" id="pop-title"></h2>
-        </div>
-        <div class="pop-body" id="pop-body"></div>
-        <div class="ex-actions"><button type="button" class="btn-primary" id="pop-close">Fermer</button></div>
-      </div>
-    </div>
+    <!-- Plan de travail construit par Lab.create (js/lab.js) -->
+    <div id="lab-host"></div>
   </section>
 
   <script src="js/components.js"></script>
   <script src="js/solver.js"></script>
   <script src="js/lab.js"></script>
+  <script src="js/confetti.js"></script>
+  <script src="js/lessons-data.js"></script>
+  <script src="js/lessons.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

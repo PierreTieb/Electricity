@@ -114,7 +114,8 @@ body[data-theme="challenge"] { --bg-top: #D8D1B9; --bg-bottom: #B8AE8B; }
 }
 .btn-clear svg { width: 18px; height: 18px; flex: none; }
 .btn-clear:active { transform: translateY(1px); }
-.btn-clear.confirm { border-color: rgba(217,70,59,.6); background: #FDECEA; color: #A32A20; }
+.btn-clear.flash { animation: clear-flash 1s ease-out; }
+@keyframes clear-flash { 0%, 15% { border-color: rgba(217,70,59,.75); background: #F8C9C3; color: #A32A20; } 100% { } }
 
 /* ===== Laboratoire ===== */
 .screen--lab { max-width: 1400px; padding-top: calc(8px + env(safe-area-inset-top, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
@@ -139,7 +140,6 @@ body[data-theme="challenge"] { --bg-top: #D8D1B9; --bg-bottom: #B8AE8B; }
   box-shadow: inset 0 0 0 1px rgba(46,58,70,.14), inset 0 3px 10px rgba(46,58,70,.1), 0 8px 20px rgba(30,36,44,.12);
   transition: background .3s;
 }
-.ws--schema { background: #FFFFFF; }
 .ws-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .ws-hint {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;
@@ -193,6 +193,14 @@ body[data-theme="challenge"] { --bg-top: #D8D1B9; --bg-bottom: #B8AE8B; }
   opacity: 0; pointer-events: none; transition: opacity .15s;
 }
 .bar.trash .bar__trash { opacity: 1; }
+.bar__item { position: relative; }
+.bar__item:disabled { opacity: .4; cursor: default; }
+.bar__n { position: absolute; top: 4px; right: 6px; font-size: .72rem; font-weight: 800; line-height: 1.4; background: #5E6B79; color: #fff; border-radius: 999px; padding: 0 6px; }
+
+/* Variantes du plan de travail (leçons, missions) */
+.lab-options:empty { display: none; }
+.lab--ro .bar, .lab--nobar .bar, .lab--ro .btn-clear, .lab--ro .ws-hint { display: none; }
+.lab--ro .el, .el--lock { cursor: default; }
 
 /* Fantôme pendant le glisser depuis la barre */
 .ghost { position: fixed; left: 0; top: 0; width: 110px; height: 80px; pointer-events: none; z-index: 50; opacity: .9; filter: drop-shadow(0 8px 10px rgba(0,0,0,.25)); }
@@ -208,6 +216,8 @@ body[data-theme="challenge"] { --bg-top: #D8D1B9; --bg-bottom: #B8AE8B; }
 .pop-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 .pop-ico { width: 84px; height: 70px; flex: none; background: #F1F3F5; border-radius: 16px; }
 .pop-title { font-family: var(--font-display); font-weight: 600; font-size: 1.35rem; margin: 0; line-height: 1.2; }
+.pop-pause { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; font-size: .76rem; font-weight: 800; color: var(--ink-soft); }
+.pop-pause::before { content: ''; width: 9px; height: 10px; border-left: 3px solid currentColor; border-right: 3px solid currentColor; box-sizing: border-box; }
 .pop-body p { margin: 6px 0; line-height: 1.45; }
 .pop-body .muted { color: var(--ink-soft); font-size: .9rem; }
 .pop-label { font-weight: 800; font-size: .85rem; margin: 14px 0 6px; }
@@ -216,6 +226,7 @@ body[data-theme="challenge"] { --bg-top: #D8D1B9; --bg-bottom: #B8AE8B; }
   min-height: 50px; border-radius: 12px; font-weight: 800; font-size: .9rem; cursor: pointer; line-height: 1.15;
   background: #F1F3F5; color: var(--ink-soft); border: 2px solid rgba(46,58,70,.12); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
 }
+.seg--4 { grid-template-columns: repeat(4, 1fr); }
 .seg button small { font-size: .72rem; font-weight: 700; opacity: .85; }
 .seg button[aria-pressed="true"] { border-color: #6E7B89; color: var(--ink); background: linear-gradient(160deg, #FBFCFE, #D9DFE7); }
 .seg .sw { width: 14px; height: 14px; border-radius: 50%; display: inline-block; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
@@ -247,8 +258,8 @@ body[data-theme="challenge"] { --bg-top: #D8D1B9; --bg-bottom: #B8AE8B; }
   .chk input:checked + .chk__box::after { left: 5px; top: 1px; width: 6px; height: 11px; }
   .btn-clear { min-height: 34px; padding: 4px 8px; flex: none; }
   .btn-clear span { display: none; }
-  .btn-clear.confirm span { display: inline; font-size: .74rem; }
   .lab-main { gap: 6px; height: clamp(380px, calc(100dvh - 118px), 1200px); }
+  .seg--4 { grid-template-columns: repeat(2, 1fr); }
   .bar { width: 84px; border-radius: 18px; }
   .bar__tabs { padding: 6px; gap: 4px; }
   .bar__tab { font-size: .74rem; min-height: 32px; border-radius: 10px; }

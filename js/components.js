@@ -12,9 +12,9 @@ window.Comp = (function () {
     led:    { name: 'DEL', prefix: 'D', opts: [{ n: 'Rouge', vf: 1.8, c: '#FF5A4E' }, { n: 'Verte', vf: 2.2, c: '#3FD06A' }, { n: 'Bleue', vf: 2.7, c: '#4A8CFF' }], def: 0, optLabel: 'Couleur' },
     sw:     { name: 'Interrupteur', prefix: 'K' },
     buzzer: { name: 'Buzzer', prefix: 'B', opts: [{ n: 'Grave', f: 440, plate: '#CDEAE4', edge: '#A2CCC2' }, { n: 'Médium', f: 880, plate: '#E3D8F4', edge: '#BFAEDD' }, { n: 'Aigu', f: 1760, plate: '#F8D9CF', edge: '#DFB2A4' }], def: 1, optLabel: 'Fréquence du son' },
-    voltmeter: { name: 'Voltmètre', meter: 'V' },
-    ammeter:   { name: 'Ampèremètre', meter: 'A' },
-    ohmmeter:  { name: 'Ohmmètre', meter: 'Ω' }
+    voltmeter: { name: 'Voltmètre', prefix: 'V', meter: 'V' },
+    ammeter:   { name: 'Ampèremètre', prefix: 'A', meter: 'A' },
+    ohmmeter:  { name: 'Ohmmètre', prefix: 'Ω', meter: 'Ω' }
   };
   var DIPOLES = ['gen', 'lamp', 'res', 'motor', 'led', 'sw', 'buzzer'];
   var METERS = ['voltmeter', 'ammeter', 'ohmmeter'];
@@ -144,7 +144,12 @@ window.Comp = (function () {
       '<rect x="14" y="-9.3" width="3.6" height="18.6" fill="#D4A93A" opacity="' + op + '"/>';
     if (el.broken) return s + '<path d="M-6 -8 L-2 -2 L-7 3 L-3 8" fill="none" stroke="#2A221D" stroke-width="1.4" stroke-linejoin="round"/><circle cx="4" cy="0" r="8" fill="#1E1A17" fill-opacity=".35"/>';
     return s + '<path d="M-19 -5H19" stroke="#fff" stroke-opacity=".5" stroke-width="2.4" stroke-linecap="round"/>' +
-      '<rect class="heat" x="-23" y="-9.5" width="46" height="19" rx="8" fill="#FF5A1F" opacity="0"/>';
+      '<rect class="heat" x="-23" y="-9.5" width="46" height="19" rx="8" fill="#FF5A1F" opacity="0"/>' + heatWaves();
+  }
+  // Petites ondes de chaleur au-dessus de la résistance (animées par le labo)
+  function heatWaves() {
+    return '<g class="hwaves" opacity="0" pointer-events="none" fill="none" stroke="#FF8A2A" stroke-width="1.8" stroke-linecap="round">' +
+      [-9, 0, 9].map(function (x) { return '<path d="M' + x + ' -12c-2.5 -2.5 2.5 -4.5 0 -7s2.5 -4.5 0 -7"/>'; }).join('') + '</g>';
   }
 
   function realMotor(el) {
@@ -186,11 +191,15 @@ window.Comp = (function () {
 
   function realBuzzer(el) {
     var o = opt(el);
-    return plate(o.plate, o.edge) + leads(17, 0) + socket(-T) + socket(T) +
-      '<g class="waves" opacity="0" pointer-events="none" fill="none" stroke="#3A4149" stroke-width="2.2" stroke-linecap="round">' +
-      [22, 28, 34].map(function (r) { return '<path d="M' + (-r * .5).toFixed(1) + ' ' + (-r * .866).toFixed(1) + ' A' + r + ' ' + r + ' 0 0 1 ' + (r * .5).toFixed(1) + ' ' + (-r * .866).toFixed(1) + '"/>'; }).join('') + '</g>' +
+    return plate(o.plate, o.edge) + leads(17, 0) + socket(-T) + socket(T) + waves('#3A4149') +
       '<circle r="18" fill="#2F353C"/><circle r="17" fill="#3B424A"/><circle r="12.5" fill="#2A3036"/>' +
       '<circle r="3.4" fill="#0E1114"/><path d="M-11 -7 A13 13 0 0 1 -4 -12.5" stroke="#fff" stroke-opacity=".35" stroke-width="2.2" stroke-linecap="round" fill="none"/>';
+  }
+
+  // Ondes sonores au-dessus du buzzer : trois arcs que le labo fait grandir à tour de rôle
+  function waves(col) {
+    return '<g class="waves" opacity="0" pointer-events="none" fill="none" stroke="' + col + '" stroke-width="2.6" stroke-linecap="round">' +
+      [0, 1, 2].map(function () { return '<path d="M-13 -20.8A24 24 0 0 1 13 -20.8"/>'; }).join('') + '</g>';
   }
 
   function realMeter(el) {
@@ -315,7 +324,7 @@ window.Comp = (function () {
   return {
     T: T, TYPES: TYPES, DIPOLES: DIPOLES, METERS: METERS,
     isMeter: isMeter, opt: opt, model: model, loadRatio: loadRatio, canBreak: canBreak,
-    optText: optText, num: num, draw: draw, bbox: bbox, defs: defs, mix: mix, ramp: ramp,
+    optText: optText, num: num, draw: draw, waves: waves, heatWaves: heatWaves, bbox: bbox, defs: defs, mix: mix, ramp: ramp,
     INFO: INFO, FICHE: FICHE, LED_I: LED_I
   };
 })();
