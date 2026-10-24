@@ -1,5 +1,6 @@
 // Résolution du circuit par analyse nodale.
-// Chaque borne de dipôle est un nœud ; fils et ampèremètres sont de très petites résistances.
+// Chaque borne de dipôle est un nœud ; fils, ampèremètres et interrupteurs fermés sont des conducteurs parfaits
+// (calculés comme de très petites résistances, puis leurs bornes ramenées au même potentiel).
 // Résultats écrits directement dans les objets : el.U, el.I (de la borne 0 vers la borne 1), wire.I (de a vers b).
 window.Solver = (function () {
   // Fils et générateur quasi idéaux, pour que les mesures tombent juste (les sommes des lois se vérifient à l'affichage).
@@ -42,6 +43,17 @@ window.Solver = (function () {
 
     function node(ref) { return idx[ref.el] == null ? -1 : idx[ref.el] * 2 + ref.i; }
     var models = dipoles.map(function (e) { return Comp.model(e); });
+    // Fils, ampèremètres et interrupteurs fermés sont des conducteurs parfaits : les bornes qu'ils relient forment un même nœud
+    var up = [];
+    for (var u = 0; u < n; u++) up.push(u);
+    function find(x) { while (up[x] !== x) x = up[x] = up[up[x]]; return x; }
+    function join(a, c) { if (a >= 0 && c >= 0) up[find(a)] = find(c); }
+    links.forEach(function (l) { join(node(l.a), node(l.b)); });
+    models.forEach(function (m, k) { if (m && dipoles[k].type === 'sw') join(2 * k, 2 * k + 1); });
+    // Un récepteur court-circuité par un conducteur parfait ne reçoit rien : il est retiré du calcul (U = 0, I = 0).
+    // Le générateur court-circuité reste, pour le comportement de court-circuit (échauffement des fils).
+    var shorted = models.map(function (m, k) { return !!m && m.kind !== 'src' && dipoles[k].type !== 'sw' && find(2 * k) === find(2 * k + 1); });
+    models = models.map(function (m, k) { return shorted[k] ? null : m; });
     var leds = [];
     models.forEach(function (m, k) { if (m && m.kind === 'led') { if (dipoles[k]._on == null) dipoles[k]._on = true; leds.push(k); } });
 
@@ -83,9 +95,9 @@ window.Solver = (function () {
       if (!changed) break;
     }
 
+    // Intensités calculées avant l'alignement des potentiels (elles respectent la loi des nœuds)
     models.forEach(function (m, k) {
       var e = dipoles[k], v = V[2 * k] - V[2 * k + 1];
-      e.U = v;
       if (!m) e.I = 0;
       else if (m.kind === 'src') e.I = (v - m.E) / rGen(e, m);
       else if (m.kind === 'R') e.I = v / m.R;
@@ -95,6 +107,12 @@ window.Solver = (function () {
       var a = node(l.a), c = node(l.b);
       l.obj.I = a < 0 || c < 0 ? 0 : (V[a] - V[c]) / R_WIRE;
     });
+    // Toutes les bornes d'un même nœud prennent le même potentiel (moyenne) : aucune tension aux bornes d'un fil,
+    // d'un interrupteur fermé, d'un ampèremètre ou d'un dipôle court-circuité
+    var sum = {}, cnt = {};
+    for (var p = 0; p < n; p++) { var r0 = find(p); sum[r0] = (sum[r0] || 0) + V[p]; cnt[r0] = (cnt[r0] || 0) + 1; }
+    for (var q = 0; q < n; q++) { var r1 = find(q); V[q] = sum[r1] / cnt[r1]; }
+    dipoles.forEach(function (e, k) { e.U = V[2 * k] - V[2 * k + 1]; });
     return { V: V, node: node };
   }
 
