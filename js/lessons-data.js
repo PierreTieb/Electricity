@@ -784,6 +784,8 @@ window.LessonsData = (function () {
           }]
         }
       ]
-    }
+    },
+
+    { id: 'ohm', title: 'La loi d\'Ohm', soon: true }
   ];
 })();

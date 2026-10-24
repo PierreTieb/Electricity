@@ -11,6 +11,7 @@ window.App = (function () {
 (function () {
   var lab = Lab.create(document.getElementById('lab-host'));
   Lessons.init();
+  Challenge.init();
 
   document.getElementById('btn-lab').addEventListener('click', function () {
     App.show('screen-lab', 'lab');
@@ -21,12 +22,4 @@ window.App = (function () {
     App.show('screen-home', 'home');
   });
   document.getElementById('btn-lessons').addEventListener('click', Lessons.openMenu);
-
-  // Module à venir : petit mouvement pour signaler qu'il n'est pas encore ouvert
-  var ch = document.getElementById('btn-challenge');
-  ch.addEventListener('click', function () {
-    ch.classList.remove('nudge');
-    void ch.offsetWidth;
-    ch.classList.add('nudge');
-  });
 })();

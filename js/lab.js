@@ -1330,6 +1330,25 @@ window.Lab = (function () {
       if (ba.ends[0] !== ba.ends[1] && ba.ends.slice().sort().join() === bb.ends.slice().sort().join()) return 'derivation';
       return null;
     }
+    // Simulation « et si… ? » sans toucher au plan de travail : over = { closed: { K1: true }, removed: { L1: true } }
+    // (un dipôle retiré est traité comme un circuit ouvert). Renvoie, par nom : on, ratio, U, I, P, broken, type, opt.
+    function simulate(over) {
+      over = over || {};
+      var ds = dipoles().map(function (e) {
+        var c = { id: e.id, type: e.type, opt: e.opt, name: e.name, closed: e.closed, broken: e.broken, _on: e._on, _short: e._short };
+        if (over.closed && over.closed[e.name] != null) c.closed = !!over.closed[e.name];
+        if (over.removed && over.removed[e.name]) c.broken = true;
+        return c;
+      });
+      Solver.solve(ds, links().map(function (l) { return { a: l.a, b: l.b, obj: {} }; }));
+      var out = {};
+      ds.forEach(function (c) {
+        c.ratio = C.loadRatio(c);
+        var U = Math.abs(c.U || 0), I = Math.abs(c.I || 0);
+        out[c.name] = { on: works(c), ratio: c.ratio, U: U, I: I, P: U * I, broken: !!c.broken, type: c.type, opt: c.opt };
+      });
+      return out;
+    }
     function state(n) {
       var e = byName(n);
       if (!e) return null;
@@ -1509,6 +1528,7 @@ window.Lab = (function () {
         });
       },
       snapshot: snapshot,
+      simulate: simulate,
       // Renomme des éléments ({ ancien: nouveau }, tous à la fois : les échanges de noms sont possibles)
       rename: function (map) {
         var changed = false;
@@ -1543,7 +1563,34 @@ window.Lab = (function () {
     return api;
   }
 
-  return { create: create };
+  // Labo invisible, pour photographier ou analyser un circuit sans l'afficher
+  function hidden(o) {
+    var host = document.createElement('div');
+    host.className = 'snap-host';
+    document.body.appendChild(host);
+    var lab = create(host, o);
+    return { lab: lab, done: function () { lab.destroy(); host.remove(); } };
+  }
+  // Image SVG fixe d'un circuit (o : schema, current, electrons, ideal ; wait : délai avant la photo en ms)
+  function snap(circuit, o, wait) {
+    o = o || {};
+    return new Promise(function (resolve) {
+      var h = hidden({
+        readOnly: true, ideal: o.ideal !== false, clear: false, palette: [], height: '320px',
+        toggles: { schema: false, current: false, electrons: false },
+        schema: !!o.schema, current: !!o.current, electrons: !!o.electrons, circuit: circuit
+      });
+      h.lab.start();
+      setTimeout(function () { var svg = h.lab.snapshot(); h.done(); resolve(svg); }, wait || 450);
+    });
+  }
+  // Analyse immédiate d'un circuit : fn(lab) reçoit un labo chargé (noms, relations…) puis il est détruit
+  function probe(circuit, fn) {
+    var h = hidden({ readOnly: true, clear: false, palette: [], height: '320px', circuit: circuit });
+    try { return fn(h.lab); } finally { h.done(); }
+  }
+
+  return { create: create, snap: snap, probe: probe };
 })();
 
 /* ================= Mode d'emploi =================
@@ -1589,5 +1636,6 @@ window.Lab = (function () {
             lab.lock(['M1', 'wires'], false) → libère des éléments (ou tous les fils) en cours de route
             lab.wiresAt('G1', 0) → nombre de fils sur une borne ; lab.linked('L2', 'L3') → reliés directement par un fil
             lab.rename({ L3: 'L1', L1: 'L3' }) → renomme des éléments (échanges permis)
+            lab.simulate({ closed: { K1: false }, removed: { L2: true } }) → état de chaque dipôle dans cette situation, sans rien changer à l'écran
   Réglages en direct : lab.set({ schema, current, electrons, readOnly, hideValues, palette, stock, toggles })
 */

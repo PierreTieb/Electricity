@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/lessons.css">
 <link rel="stylesheet" href="css/oxidation.css">
+<link rel="stylesheet" href="css/challenge.css">
 </head>
 <body data-theme="home">
 
@@ -30,9 +31,10 @@
         <span class="mode-btn__subtitle">Un espace libre pour tester les propriétés de l'électricité</span>
         <svg class="mode-btn__ico" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="21" r="12" fill="#FFF3B8" stroke="currentColor" stroke-width="2.6"/><path d="M19 32h10v5a3 3 0 0 1-3 3h-4a3 3 0 0 1-3-3z" fill="#fff" fill-opacity=".55" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/><path d="M20 22l2.5 3 1.5-5 1.5 5 2.5-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <button type="button" id="btn-challenge" class="mode-btn mode-btn--gold mode-btn--icon" aria-disabled="true">
+      <button type="button" id="btn-challenge" class="mode-btn mode-btn--gold mode-btn--icon">
         <span class="mode-btn__title">Challenge</span>
-        <span class="mode-btn__subtitle">Prochainement...</span>
+        <span class="mode-btn__subtitle">Relève 3 missions et gagne un maximum de points</span>
+        <span class="mode-btn__best" hidden></span>
         <span class="mode-btn__trophy" aria-hidden="true">🏆</span>
       </button>
     </div>
@@ -79,6 +81,56 @@
     </div>
   </section>
 
+  <!-- ÉCRAN : CHOIX DES MISSIONS DU CHALLENGE -->
+  <section id="screen-challenge" class="screen screen--challenge">
+    <button type="button" class="btn-back" id="btn-back-challenge">← Retour</button>
+    <h1 class="app-title">Challenge</h1>
+    <p class="app-subtitle ch-intro">Choisis 3 missions à réaliser pour totaliser un maximum de points, attention les échecs t'en coûteront</p>
+    <p class="ch-best" id="ch-best" hidden></p>
+    <div id="ch-groups"></div>
+    <div class="pop-overlay lesson-modal" id="chp-modal" hidden>
+      <div class="pop-card" id="chp-card" role="dialog" aria-modal="true"></div>
+    </div>
+  </section>
+
+  <!-- ÉCRAN : UNE MISSION DU CHALLENGE -->
+  <section id="screen-mission" class="screen screen--lab">
+    <div class="lab-head lab-head--3">
+      <button type="button" class="btn-back btn-quit" id="btn-quit-ch">✕ Quitter</button>
+      <div class="lab-head__titles">
+        <p class="lesson-kicker" id="ch-kicker"></p>
+        <h1 class="app-title app-title--small" id="ch-title"></h1>
+      </div>
+      <div class="ch-score" id="ch-score" aria-live="polite"></div>
+    </div>
+    <div class="lesson-bar ch-bar" id="ch-bar">
+      <span class="lesson-bar__step ch-bar__n" id="ch-n"></span>
+      <button type="button" class="lesson-bar__goal" id="ch-goal" aria-label="Revoir la mission">
+        <span class="lesson-bar__text" id="ch-task"></span>
+      </button>
+      <span class="ch-stake" id="ch-stake" title="Points en jeu"></span>
+      <button type="button" class="btn-clear ch-switch-btn" id="ch-switch" aria-label="Changer de mission"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h13l-3-3M20 16H7l3 3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Changer</span></button>
+      <button type="button" class="btn-primary ch-verify" id="ch-verify">Vérifier<span class="ch-verify__more"> la réponse</span></button>
+      <button type="button" class="btn-primary lesson-bar__next" id="ch-next" hidden>Mission suivante</button>
+    </div>
+    <div class="lesson-work">
+      <div id="ch-host"></div>
+      <!-- Fenêtre de travail : schéma, cahier des charges ou tableau de valeurs -->
+      <div class="lesson-panel" id="ch-panel" hidden></div>
+    </div>
+    <div class="pop-overlay lesson-modal" id="ch-modal" hidden>
+      <div class="pop-card" id="ch-card" role="dialog" aria-modal="true"></div>
+    </div>
+    <div class="lesson-badge" id="ch-badge" hidden aria-hidden="true">
+      <svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#3FAE6B"/><circle cx="32" cy="32" r="30" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="3"/><path d="M19 33l9 9 17-19" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+  </section>
+
+  <!-- ÉCRAN : RÉSULTATS DU CHALLENGE -->
+  <section id="screen-ch-results" class="screen screen--challenge">
+    <div id="ch-results"></div>
+  </section>
+
   <!-- ÉCRAN : LABORATOIRE -->
   <section id="screen-lab" class="screen screen--lab">
     <div class="lab-head">
@@ -99,6 +151,8 @@
   <script src="js/confetti.js"></script>
   <script src="js/lessons-data.js"></script>
   <script src="js/lessons.js"></script>
+  <script src="js/challenge-data.js"></script>
+  <script src="js/challenge.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

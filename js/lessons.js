@@ -341,20 +341,7 @@ window.Lessons = (function () {
 
   /* ---------- À retenir : images fixes des circuits, texte à côté ---------- */
   // Le circuit est monté dans un labo invisible, photographié puis détruit
-  function snap(l) {
-    return new Promise(function (resolve) {
-      var host = document.createElement('div'), o = l.opts || {};
-      host.className = 'snap-host';
-      document.body.appendChild(host);
-      var m = Lab.create(host, {
-        readOnly: true, ideal: o.ideal !== false, clear: false, palette: [], height: '320px',
-        toggles: { schema: false, current: false, electrons: false },
-        schema: !!o.schema, current: !!o.current, electrons: !!o.electrons, circuit: l.circuit
-      });
-      m.start();
-      setTimeout(function () { var svg = m.snapshot(); m.destroy(); host.remove(); resolve(svg); }, l.wait || 450);
-    });
-  }
+  function snap(l) { return Lab.snap(l.circuit, l.opts, l.wait); }
   function showRecap() {
     var h = '<p class="lesson-modal__kicker">' + cur.title + (cur.level ? ' · Niveau ' + cur.level : '') + '</p><h2 class="pop-title">À retenir</h2><div class="recap">';
     cur.recap.forEach(function (r, k) {
