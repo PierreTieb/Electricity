@@ -10,7 +10,7 @@ window.Challenge = (function () {
   function pts(n) { return n + ' point' + (Math.abs(n) > 1 ? 's' : ''); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
-  /* ---------- Dorure des 27 cartes : laiton → or → presque platine, case par case ---------- */
+  /* ---------- Dorure des 27 cartes : laiton → or → presque platine, case par case dans l'ordre des points ---------- */
   var GILD = [
     { l: [240, 228, 178], m: [196, 166, 84], d: [140, 112, 44], t: [62, 48, 6] },
     { l: [255, 243, 196], m: [242, 197, 61], d: [185, 140, 23], t: [74, 51, 0] },
@@ -23,11 +23,11 @@ window.Challenge = (function () {
     return '--c-light:' + rgb(lerp(a.l, b.l, u)) + ';--c-mid:' + rgb(lerp(a.m, b.m, u)) + ';--c-dark:' + rgb(lerp(a.d, b.d, u)) + ';--c-text:' + rgb(lerp(a.t, b.t, u));
   }
   function card(i, extra) {
-    var m = missions[i], n = picked.indexOf(i);
-    return '<button type="button" class="ch-card' + (n >= 0 ? ' on' : '') + (extra || '') + '" data-i="' + i + '" style="' + gild(i) + '" aria-pressed="' + (n >= 0) + '"' +
-      ' aria-label="' + esc(m.group + ', ' + m.tag + ', ' + m.title + ', ' + m.points + ' points') + '">' +
+    var m = missions[i], n = picked.indexOf(i), rank = i - i % 9 + (i % 3) * 3 + Math.floor(i % 9 / 3);
+    return '<button type="button" class="ch-card' + (n >= 0 ? ' on' : '') + (extra || '') + '" data-i="' + i + '" style="' + gild(rank) + '" aria-pressed="' + (n >= 0) + '"' +
+      ' aria-label="' + esc(m.group + ', ' + m.tag + ', difficulté ' + m.stars + ' sur 3, ' + m.points + ' points') + '">' +
       '<span class="ch-card__pts">' + m.points + '<small>pts</small></span>' +
-      '<span class="ch-card__tag">' + m.tag + '</span><span class="ch-card__title">' + (m.title.indexOf(m.tag) === 0 ? m.title.slice(m.tag.length) : m.title) + '</span>' +
+      '<span class="ch-card__tag">' + m.tag + '</span><span class="ch-card__stars" aria-hidden="true">' + '★★★'.slice(0, m.stars) + '</span>' +
       (n >= 0 ? '<span class="ch-card__n">' + (n + 1) + '</span>' : '') + '</button>';
   }
 

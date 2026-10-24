@@ -35,7 +35,7 @@
 .ch-card__pts { font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; line-height: 1; }
 .ch-card__pts small { font-size: .78rem; margin-left: 2px; }
 .ch-card__tag { font-size: .66rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; opacity: .75; margin-top: 4px; }
-.ch-card__title { font-size: .78rem; font-weight: 700; line-height: 1.2; }
+.ch-card__stars { font-size: .9rem; line-height: 1.1; letter-spacing: .08em; }
 .ch-card.on {
   transform: translateY(5px);
   box-shadow: 0 0 0 var(--c-dark), 0 3px 8px rgba(30,36,44,.2), inset 0 3px 8px rgba(0,0,0,.22), inset 0 0 0 2px var(--c-dark);
@@ -101,7 +101,7 @@
 .ch-grid--mini { gap: 8px; }
 .ch-grid--mini .ch-card { min-height: 78px; border-radius: 14px; padding: 6px; }
 .ch-grid--mini .ch-card__pts { font-size: 1.3rem; }
-.ch-grid--mini .ch-card__title { font-size: .7rem; }
+.ch-grid--mini .ch-card__stars { font-size: .78rem; }
 
 /* Récapitulatif */
 .ch-recap { width: 100%; border-collapse: collapse; margin: 6px 0 0; font-size: .9rem; }
@@ -204,7 +204,7 @@
   .ch-grid { gap: 8px; }
   .ch-card { min-height: 92px; border-radius: 14px; padding: 8px 4px 10px; }
   .ch-card__pts { font-size: 1.45rem; }
-  .ch-card__title { font-size: .7rem; }
+  .ch-card__stars { font-size: .8rem; }
   .ch-card__tag { font-size: .58rem; }
   .lab-head--3 { grid-template-columns: auto 1fr auto; }
   .lab-head--3 .lesson-kicker { font-size: .62rem; }

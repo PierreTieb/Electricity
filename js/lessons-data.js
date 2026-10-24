@@ -5,6 +5,9 @@
 //          start(lab) → état noté au départ, check(lab, evs, ctx) → true quand la tâche est réussie,
 //          rename(lab) → { ancien: nouveau } : noms du schéma donnés aux dipôles une fois la construction réussie,
 //          hold (ms pendant lesquels elle doit le rester) }
+// Consigne 'measure' : rows (une valeur par ligne) ou grid { head, rows, cols: [{ k, head (texte ou fonction(lab)),
+//          from (consigne dont la colonne reprend les valeurs notées), fallback }] }, expect(lab) → valeurs attendues,
+//          ready(lab) → message tant que la mesure ne peut pas encore être vérifiée
 window.LessonsData = (function () {
   // ---- Petites aides de vérification ----
   function has(lab, type) { return lab.names(type).length > 0; }
@@ -141,6 +144,28 @@ window.LessonsData = (function () {
     return meas ? { ok: true, map: map } : {
       ok: false, hint: 'Ton circuit fonctionne, mais on ne pourra pas mesurer toutes les intensités : relie la borne + du générateur par un seul fil, et la lampe de 6 V par un seul fil, comme sur le schéma.'
     };
+  }
+
+  // ---- Cours 8 : loi d'Ohm ----
+  // Fraction écrite sur deux étages
+  function frac(a, b) { return '<span class="frac"><span>' + a + '</span><span>' + b + '</span></span>'; }
+  // Générateur 6 V et résistance R1 (47 Ω au départ)
+  function ohmCircuit(opt) {
+    return {
+      els: [{ name: 'G1', type: 'gen', x: 0, y: 0, opt: 1 }, { name: 'R1', type: 'res', x: 0, y: 170, opt: opt || 0 }],
+      wires: [['G1.0', 'R1.0'], ['R1.1', 'G1.1']]
+    };
+  }
+  // Lignes du tableau (une colonne par valeur de R1) ; intensité notée en ampères
+  var OHM_ROWS = [
+    { k: 'U', label: 'Tension U', unit: 'V', tol: .06 },
+    { k: 'I', label: 'Intensité I', unit: 'A', tol: .0005 }
+  ];
+  function ohmExpect(lab) { var r = lab.state('R1'); return { U: r.U, I: r.I }; }
+  function ohms(lab) { var R = Comp.TYPES.res.opts[lab.state('R1').opt]; return (R >= 1000 ? '1 000' : R) + ' Ω'; }
+  // Circuit de l'étude avec voltmètre et ampèremètre, pour « À retenir »
+  function ohmMeasured(opt) {
+    return withMeters(ohmCircuit(opt), [{ name: 'V1', type: 'voltmeter', on: 'R1', dir: [0, 1] }, { name: 'A1', type: 'ammeter', between: ['R1.1', 'G1.1'] }]);
   }
 
   // Circuit de démonstration : générateur, interrupteur et lampe en rectangle
@@ -786,6 +811,65 @@ window.LessonsData = (function () {
       ]
     },
 
-    { id: 'ohm', title: 'La loi d\'Ohm', soon: true }
+    {
+      id: 'ohm', title: 'La loi d\'Ohm', sub: 'Relation entre tension, intensité et résistance',
+      // Circuit imposé générateur + résistance, mesures notées dans un tableau à colonnes, puis question à choix
+      lab: { ideal: false, electrons: true, toggles: {} },
+      freePalette: ['gen', 'res', 'lamp', 'voltmeter', 'ammeter', 'ohmmeter'],
+      anim: OhmAnim,
+      steps: [
+        {
+          kind: 'measure', title: 'Premières mesures', palette: ['voltmeter', 'ammeter'], fixedTypes: ['gen', 'res'],
+          circuit: locked(ohmCircuit()),
+          text: 'Dans un circuit électrique, la tension, l\'intensité et la résistance dépendent les unes des autres. Ce lien est une formule mathématique : la <b>loi d\'Ohm</b>.',
+          task: 'Place un voltmètre aux bornes de la résistance et un ampèremètre quelque part dans le circuit, puis note les valeurs dans le tableau.',
+          how: 'Dans le tableau, l\'intensité se note en <b>ampères (A)</b> : l\'ampèremètre affiche des milliampères, et 1 A = 1 000 mA (par exemple 250 mA = 0,25 A).',
+          grid: { head: 'Résistance R', rows: OHM_ROWS, cols: [{ k: 'a', head: '47 Ω' }] },
+          expect: ohmExpect
+        },
+        {
+          kind: 'measure', title: 'Changer la résistance', palette: ['voltmeter', 'ammeter'], fixedTypes: ['gen'],
+          text: 'Le réglage de la résistance R1 est maintenant possible. La tension du générateur, elle, ne change pas.',
+          task: 'Augmente la valeur de la résistance R1, puis note les nouvelles valeurs dans la suite du tableau.',
+          how: 'Touche la résistance pour changer sa valeur.',
+          grid: {
+            head: 'Résistance R', rows: OHM_ROWS,
+            cols: [{ k: 'a', head: '47 Ω', from: 0, fallback: { U: 6, I: .128 } }, { k: 'b', head: function (lab) { return lab.state('R1').opt > 0 ? ohms(lab) : '?'; } }]
+          },
+          ready: function (lab) { return lab.state('R1').opt > 0 ? null : 'Augmente d\'abord la valeur de la résistance R1.'; },
+          expect: ohmExpect
+        },
+        {
+          kind: 'quiz', title: 'La formule', results: 1,
+          question: 'À l\'aide d\'une calculatrice, effectue des calculs avec tes mesures pour vérifier l\'une de ces 3 formules. Clique sur la bonne réponse quand tu es prêt.',
+          choices: ['U = ' + frac('R', 'I'), 'R = ' + frac('U', 'I'), 'I = U × R'],
+          answer: [1], task: 'Trouve la formule vérifiée par tes mesures.'
+        }
+      ],
+      end: 'Bravo ! Tu connais maintenant la loi d\'Ohm : la résistance est égale à la tension divisée par l\'intensité.',
+      recap: [
+        {
+          law: {
+            name: 'Loi d\'Ohm',
+            text: 'La tension U aux bornes d\'une résistance, l\'intensité I qui la traverse et la valeur R de la résistance sont liées : <b>la résistance est égale à la tension divisée par l\'intensité</b>.<br>U en <b>volts (V)</b>, I en <b>ampères (A)</b>, R en <b>ohms (Ω)</b>.',
+            formula: 'R = ' + frac('U', 'I')
+          }
+        },
+        {
+          law: {
+            name: 'Calculer une tension ou une intensité',
+            text: 'De la loi d\'Ohm, on tire deux autres formules : l\'une pour calculer la <b>tension</b>, l\'autre pour calculer l\'<b>intensité</b>.',
+            formula: 'U = R × I<span class="law__sep"></span>I = ' + frac('U', 'R')
+          }
+        },
+        {
+          text: 'Attention aux unités : l\'intensité doit être en <b>ampères</b> (128 mA = 0,128 A).',
+          labs: [
+            { caption: 'R = 47 Ω : 6,00 V ÷ 0,128 A ≈ 47 Ω.', circuit: ohmMeasured(0) },
+            { caption: 'R = 1 000 Ω : 6,00 V ÷ 0,006 A = 1 000 Ω. Plus la résistance est grande, plus l\'intensité est faible.', circuit: ohmMeasured(2) }
+          ]
+        }
+      ]
+    }
   ];
 })();

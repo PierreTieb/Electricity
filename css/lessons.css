@@ -79,10 +79,17 @@
 .lp-table input:focus { outline: none; border-style: solid; }
 .lp-table td span { margin-left: 4px; font-weight: 800; font-size: .85rem; color: var(--ink-soft); }
 .lp-mark { width: 22px; text-align: center; font-weight: 800; }
-.lp-table tr.ok input { border: 2px solid #4FBE7A; background: #E5F7EC; }
-.lp-table tr.ok .lp-mark { color: #2F9E5E; }
-.lp-table tr.bad input { border: 2px solid #E9756B; background: #FDECEA; }
-.lp-table tr.bad .lp-mark { color: #D9463B; }
+.lp-table .ok input { border: 2px solid #4FBE7A; background: #E5F7EC; }
+.lp-table .ok .lp-mark { color: #2F9E5E; }
+.lp-table .bad input { border: 2px solid #E9756B; background: #FDECEA; }
+.lp-table .bad .lp-mark { color: #D9463B; }
+/* Tableau à colonnes (loi d'Ohm) : une colonne par valeur de la résistance */
+.lp-grid th small { font-weight: 800; color: var(--ink-soft); }
+.lp-grid .lp-col { text-align: center; padding: 6px 4px; font-family: var(--font-display); font-size: .95rem; font-weight: 600; color: #6E3F1F; }
+.lp-grid td { text-align: center; padding: 4px 2px; }
+.lp-grid td .lp-mark { display: inline-block; width: 16px; font-style: normal; }
+.lp-grid .lp-old { font-family: var(--font-display); font-weight: 600; }
+.quiz__grid td { text-align: center; }
 .lp-actions { display: flex; justify-content: center; margin-top: 10px; }
 .lp-check { min-height: 40px; padding: 8px 22px; --acc-light: #F8E4D2; --acc-mid: #E3B48E; --acc-dark: #B07B55; --acc-text: #4E2A12; }
 .lp-msg { margin: 8px 0 0; min-height: 1.2em; text-align: center; font-size: .85rem; font-weight: 800; color: #A32A20; }
@@ -110,6 +117,42 @@
 .law__name { display: block; font-family: var(--font-display); font-size: 1.05rem; color: #6E3F1F; margin-bottom: 4px; }
 .law p { margin: 0 0 6px; line-height: 1.45; }
 .law__f { font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; text-align: center; padding: 6px; border-radius: 10px; background: #fff; }
+.law__sep { display: inline-block; width: 2.4em; }
+/* Fraction sur deux étages */
+.frac { display: inline-flex; flex-direction: column; align-items: center; vertical-align: middle; line-height: 1.05; margin: 0 .12em; }
+.frac > span { padding: 0 .2em; }
+.frac > span:first-child { border-bottom: 2px solid currentColor; }
+
+/* Animation de la loi d'Ohm */
+.lesson-anim { --acc-light: #E3EEFB; --acc-mid: #A9C8F0; --acc-dark: #2F6FD6; --acc-text: #10294F; }
+.anim { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.anim-formula {
+  height: 8.8rem; display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-weight: 700; color: var(--ink);
+  border-radius: 16px; background: #fff; box-shadow: inset 0 0 0 1px rgba(46,58,70,.12);
+}
+.anim-formula .frac > span:first-child { border-bottom: 3px solid var(--ink); }
+.af { line-height: 1; transition: font-size .25s ease; }
+.af-eq { font-size: 2em; margin: 0 .2em; }
+.anim-svg { display: block; width: 100%; height: auto; border-radius: 16px; background: linear-gradient(180deg, #F2F4F6, #E3E7EB); box-shadow: inset 0 0 0 1px rgba(46,58,70,.12); }
+.anim-ctl { display: flex; flex-direction: column; gap: 10px; }
+.anim-g { display: grid; grid-template-columns: 8.2em 1fr 1.4em; align-items: center; gap: 10px; }
+.anim-g__l { display: flex; align-items: baseline; gap: 6px; font-weight: 800; font-size: .92rem; }
+.anim-g__l b { font-family: var(--font-display); font-size: 1.35rem; }
+/* Jauges : la partie remplie se fonce quand la valeur augmente */
+.anim-g input[type=range], .anim-g__bar {
+  --p: 50%; --o: .6; display: block; width: 100%; height: 14px; margin: 0; border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) calc(var(--o) * 100%), #fff) var(--p), #DFE4E9 var(--p));
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.15);
+}
+.anim-g input[type=range] { -webkit-appearance: none; appearance: none; cursor: pointer; }
+.anim-g input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 4px solid var(--c); box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.anim-g input[type=range]::-moz-range-thumb { width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 4px solid var(--c); box-shadow: 0 2px 6px rgba(0,0,0,.25); }
+.anim-g input[type=range]:focus-visible { outline: 3px solid color-mix(in srgb, var(--c) 40%, transparent); outline-offset: 4px; }
+.anim-trend { font-size: 1.1rem; font-weight: 800; text-align: center; opacity: 0; transform: scale(.5); transition: opacity .3s, transform .3s; }
+.anim-trend.on { opacity: 1; transform: none; }
+.anim-trend.up { color: #2F9E5E; }
+.anim-trend.down { color: #D9463B; }
+.anim-say { margin: 0; min-height: 2.9em; text-align: center; font-weight: 700; line-height: 1.4; }
 
 /* Bouton « Niveau 2 » et choix du niveau */
 .lesson-level { --acc-light: #FFF5CC; --acc-mid: #F0D27A; --acc-dark: #BD9634; --acc-text: #4A3600; }
@@ -194,4 +237,8 @@
   .lp-table th { font-size: .76rem; }
   .lp-table input { width: 60px; font-size: .92rem; }
   .recap__cap { font-size: .84rem; }
+  .anim-formula { height: 7.6rem; font-size: .85rem; }
+  .anim-g { grid-template-columns: 6.4em 1fr 1.2em; gap: 8px; }
+  .anim-g__l { font-size: .8rem; }
+  .lp-grid .lp-col { font-size: .85rem; }
 }

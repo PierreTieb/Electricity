@@ -127,7 +127,9 @@ window.Lessons = (function () {
   }
   // Vérification continue de la tâche en cours (evs : évènements du labo depuis le début de la consigne)
   function tick() {
-    if (phase !== 'doing' || !lab) return;
+    if (!lab) return;
+    refreshHeads();
+    if (phase !== 'doing') return;
     var s = step(), ok = false;
     if (s.kind === 'measure') ok = measureOk;
     else if (s.kind === 'quiz') ok = quizOk;
@@ -187,7 +189,7 @@ window.Lessons = (function () {
       '<div class="lesson-end__ico" aria-hidden="true">🏅</div>' +
       '<h2 class="pop-title lesson-end__title">' + (cur.level ? 'Niveau ' + cur.level + ' terminé !' : 'Cours terminé !') + '</h2>' +
       '<p class="lesson-modal__text lesson-end__text">' + cur.end + '</p>' +
-      '<div class="ex-actions"><button type="button" class="btn-primary" data-do="recap">À retenir</button>' +
+      '<div class="ex-actions"><button type="button" class="btn-primary" data-do="recap">À retenir</button>' + animBtn() +
       (cur.next ? '<button type="button" class="btn-primary lesson-level" data-do="level">Niveau ' + D[byId(cur.next)].level + '</button>' : '') +
       '<button type="button" class="btn-clear lesson-free" data-do="free">Continuer dans le labo</button></div>'
     );
@@ -218,43 +220,93 @@ window.Lessons = (function () {
       else snap({ circuit: labeled(cur.target, cur.labels), opts: { schema: true } }).then(function (svg) { cur._schema = svg; if (img.isConnected) img.innerHTML = svg; });
     } else if (s.kind === 'measure') {
       var prev = results[idx] || {};
-      p.innerHTML = panelHead('Mes mesures') + '<div class="lp-body"><table class="lp-table">' + s.rows.map(function (r) {
-        return '<tr data-k="' + r.k + '"><th>' + r.label + '</th><td><input type="text" inputmode="decimal" autocomplete="off" data-k="' + r.k + '" value="' +
-          (prev[r.k] != null ? String(prev[r.k]).replace('.', ',') : '') + '" aria-label="' + r.label + '"><span>' + r.unit + '</span></td><td class="lp-mark"></td></tr>';
-      }).join('') + '</table><div class="lp-actions"><button type="button" class="btn-primary lp-check" data-do="verify">Vérifier</button></div><p class="lp-msg" aria-live="polite"></p></div>';
+      p.innerHTML = panelHead('Mes mesures') + '<div class="lp-body">' + (s.grid ? gridHtml(s.grid, prev) : '<table class="lp-table">' + s.rows.map(function (r) {
+        return '<tr data-cell data-k="' + r.k + '"><th>' + r.label + '</th><td>' + input(r.k, prev, r.label) + '<span>' + r.unit + '</span></td><td class="lp-mark"></td></tr>';
+      }).join('') + '</table>') + '<div class="lp-actions"><button type="button" class="btn-primary lp-check" data-do="verify">Vérifier</button></div><p class="lp-msg" aria-live="polite"></p></div>';
       p.hidden = false;
     } else hidePanel();
+  }
+  function input(k, prev, label) {
+    return '<input type="text" inputmode="decimal" autocomplete="off" data-k="' + k + '" value="' + (prev[k] != null ? num(prev[k]) : '') + '" aria-label="' + label + '">';
+  }
+  function num(v) { return String(v).replace('.', ','); }
+  // Tableau à colonnes (une colonne par situation) ; une colonne « from » reprend, sans saisie, les valeurs notées à une consigne précédente
+  function gridHtml(g, prev) {
+    return '<table class="lp-table lp-grid"><tr><th>' + g.head + '</th>' + g.cols.map(function (c) {
+      return '<th class="lp-col" data-col="' + c.k + '">' + colHead(c) + '</th>';
+    }).join('') + '</tr>' + g.rows.map(function (r) {
+      return '<tr><th>' + r.label + ' <small>(' + r.unit + ')</small></th>' + g.cols.map(function (c) {
+        if (c.from != null) { var v = oldVal(c, r.k); return '<td class="lp-old">' + (v != null ? num(v) : '—') + '</td>'; }
+        var k = c.k + '.' + r.k;
+        return '<td data-cell data-k="' + k + '">' + input(k, prev, r.label + ', ' + colHead(c)) + '<i class="lp-mark"></i></td>';
+      }).join('') + '</tr>';
+    }).join('') + '</table>';
+  }
+  function colHead(c) {
+    if (typeof c.head !== 'function') return c.head;
+    try { return c.head(lab); } catch (e) { return ''; }
+  }
+  function oldVal(c, rk) { var r = results[c.from], v = r && r[c.k + '.' + rk]; return v != null ? v : c.fallback && c.fallback[rk]; }
+  // Intitulés de colonnes qui suivent le circuit (ex. valeur de la résistance choisie)
+  function refreshHeads() {
+    var s = step();
+    if (!s || !s.grid || $('lesson-panel').hidden) return;
+    s.grid.cols.forEach(function (c) {
+      var th = $('lesson-panel').querySelector('[data-col="' + c.k + '"]'), t = colHead(c);
+      if (th && typeof c.head === 'function' && th.textContent !== t) th.textContent = t;
+    });
   }
   function panelHead(title) {
     return '<div class="lp-head"><b>' + title + '</b><button type="button" class="lp-fold" data-do="fold" aria-label="Replier ou déplier">▾</button></div>';
   }
+  // Cases à remplir : { k (champ), ek (valeur attendue correspondante), r (ligne) }
+  function cells(s) {
+    if (!s.grid) return s.rows.map(function (r) { return { k: r.k, ek: r.k, r: r }; });
+    var out = [];
+    s.grid.cols.forEach(function (c) { if (c.from == null) s.grid.rows.forEach(function (r) { out.push({ k: c.k + '.' + r.k, ek: r.k, r: r }); }); });
+    return out;
+  }
   // Mesures notées : chaque valeur est comparée à ce que montrent les appareils dans le circuit
   function verify() {
-    var s = step(), p = $('lesson-panel'), all = true, vals = {}, exp = {};
+    var s = step(), p = $('lesson-panel'), all = true, vals = {}, exp = {}, mA = false, msg = p.querySelector('.lp-msg');
+    var wait = s.ready ? s.ready(lab) : null;
+    if (wait) { msg.textContent = wait; msg.classList.remove('ok'); return; }
     try { exp = s.expect(lab) || {}; } catch (e) { exp = {}; }
-    s.rows.forEach(function (r) {
-      var inp = p.querySelector('input[data-k="' + r.k + '"]'), v = parseFloat(inp.value.replace(',', '.').replace(/\s/g, ''));
-      var e = exp[r.k], good = isFinite(v) && e != null && Math.abs(v - e) <= Math.max(r.tol || 0, Math.abs(e) * .05);
-      var row = p.querySelector('tr[data-k="' + r.k + '"]');
-      row.classList.toggle('ok', good); row.classList.toggle('bad', !good);
-      row.querySelector('.lp-mark').textContent = good ? '✓' : '✗';
-      vals[r.k] = isFinite(v) ? v : null;
+    cells(s).forEach(function (c) {
+      var inp = p.querySelector('input[data-k="' + c.k + '"]'), v = parseFloat(inp.value.replace(',', '.').replace(/\s/g, ''));
+      var e = exp[c.ek], good = isFinite(v) && e != null && Math.abs(v - e) <= Math.max(c.r.tol || 0, Math.abs(e) * .05);
+      // Intensité notée en milliampères au lieu d'ampères
+      if (!good && c.r.unit === 'A' && isFinite(v) && e != null && Math.abs(v - e * 1000) <= Math.max(3, e * 50)) mA = true;
+      var box = inp.closest('[data-cell]');
+      box.classList.toggle('ok', good); box.classList.toggle('bad', !good);
+      box.querySelector('.lp-mark').textContent = good ? '✓' : '✗';
+      vals[c.k] = isFinite(v) ? v : null;
       if (!good) all = false;
     });
+    // Valeurs reprises et intitulés des colonnes, gardés pour la question qui suit
+    if (s.grid) s.grid.cols.forEach(function (c) {
+      vals['head.' + c.k] = colHead(c);
+      if (c.from != null) s.grid.rows.forEach(function (r) { vals[c.k + '.' + r.k] = oldVal(c, r.k); });
+    });
     results[idx] = vals;
-    p.querySelector('.lp-msg').textContent = all ? 'Toutes tes mesures sont justes !' : 'Certaines valeurs ne correspondent pas : mesure à nouveau.';
-    p.querySelector('.lp-msg').classList.toggle('ok', all);
+    msg.textContent = all ? 'Toutes tes mesures sont justes !' : mA ? 'Attention à l\'unité : l\'intensité se note en ampères (A). 1 A = 1 000 mA.' : 'Certaines valeurs ne correspondent pas : mesure à nouveau.';
+    msg.classList.toggle('ok', all);
     if (all && phase === 'doing') measureOk = true;
   }
 
   /* ---------- Question à choix ---------- */
   function quizHtml(s) {
     var m = cur.steps[s.results], vals = results[s.results] || {};
+    function show(v, unit) { return v != null ? num(v) + ' ' + unit : '—'; }
+    var g = m.grid, res = g ?
+      '<tr><th>' + g.head + '</th>' + g.cols.map(function (c) { return '<td>' + (vals['head.' + c.k] || colHead(c)) + '</td>'; }).join('') + '</tr>' +
+      g.rows.map(function (r) {
+        return '<tr><th>' + r.label + '</th>' + g.cols.map(function (c) { return '<td>' + show(c.from != null && vals[c.k + '.' + r.k] == null ? oldVal(c, r.k) : vals[c.k + '.' + r.k], r.unit) + '</td>'; }).join('') + '</tr>';
+      }).join('') :
+      m.rows.map(function (r) { return '<tr><th>' + r.label + '</th><td>' + show(vals[r.k], r.unit) + '</td></tr>'; }).join('');
     return '<p class="lesson-modal__kicker">Consigne ' + (idx + 1) + ' / ' + cur.steps.length + '</p>' +
       '<h2 class="pop-title">' + s.title + '</h2>' +
-      '<table class="quiz__res"><caption>Tes mesures</caption>' + m.rows.map(function (r) {
-        return '<tr><th>' + r.label + '</th><td>' + (vals[r.k] != null ? String(vals[r.k]).replace('.', ',') + ' ' + r.unit : '—') + '</td></tr>';
-      }).join('') + '</table>' +
+      '<table class="quiz__res' + (g ? ' quiz__grid' : '') + '"><caption>Tes mesures</caption>' + res + '</table>' +
       '<p class="lesson-modal__text"><b>' + s.question + '</b></p>' +
       '<div class="quiz">' + s.choices.map(function (c, k) {
         return '<button type="button" class="quiz__c" data-c="' + k + '" aria-pressed="false"><b>' + 'ABCD'[k] + '</b><span>' + c + '</span></button>';
@@ -359,7 +411,7 @@ window.Lessons = (function () {
       });
       h += '</div>';
     });
-    h += '</div><div class="ex-actions">' +
+    h += '</div><div class="ex-actions">' + animBtn() +
       (phase === 'end' && cur.next ? '<button type="button" class="btn-primary lesson-level" data-do="level">Niveau ' + D[byId(cur.next)].level + '</button>' : '') +
       '<button type="button" class="btn-primary" data-do="' + (phase === 'end' ? 'free' : 'close') + '">' + (phase === 'end' ? 'Continuer dans le labo' : 'Fermer') + '</button></div>';
     modal(h, true);
@@ -373,15 +425,27 @@ window.Lessons = (function () {
     })();
   }
 
+  /* ---------- Animation du cours (ex. loi d'Ohm), ouverte depuis la fin du cours ou « À retenir » ---------- */
+  var anim = null, animFrom = null;
+  function animBtn() { return cur.anim ? '<button type="button" class="btn-primary lesson-anim" data-do="anim">' + cur.anim.label + '</button>' : ''; }
+  function showAnim() {
+    animFrom = $('lesson-card').querySelector('.recap') ? 'recap' : 'end';
+    modal('<p class="lesson-modal__kicker">' + cur.title + '</p><h2 class="pop-title">' + cur.anim.title + '</h2><div class="anim-host"></div>' +
+      '<div class="ex-actions"><button type="button" class="btn-primary" data-do="anim-back">Retour</button></div>', true);
+    anim = cur.anim.mount($('lesson-card').querySelector('.anim-host'));
+  }
+  function stopAnim() { if (anim) { anim.destroy(); anim = null; } }
+
   /* ---------- Fenêtre de la leçon ---------- */
   function modal(html, wide) {
+    stopAnim();
     var card = $('lesson-card');
     card.innerHTML = html;
     card.classList.toggle('pop-card--wide', !!wide);
     card.scrollTop = 0;
     $('lesson-modal').hidden = false;
   }
-  function closeModal() { $('lesson-modal').hidden = true; }
+  function closeModal() { stopAnim(); $('lesson-modal').hidden = true; }
   function onModalClick(ev) {
     var c = ev.target.closest('.quiz__c');
     if (c) { pick(c); return; }
@@ -394,6 +458,8 @@ window.Lessons = (function () {
     else if (a === 'close') closeModal();
     else if (a === 'answer') answer();
     else if (a === 'level') { closeModal(); start(byId(cur.next)); }
+    else if (a === 'anim') showAnim();
+    else if (a === 'anim-back') { if (animFrom === 'recap') showRecap(); else showEnd(); }
   }
   function onPanelClick(ev) {
     var b = ev.target.closest('[data-do]');
@@ -446,5 +512,6 @@ window.Lessons = (function () {
     timer = setInterval(tick, 200);
   }
 
-  return { init: init, openMenu: openMenu };
+  // lab() : labo de la leçon en cours (pour les tests)
+  return { init: init, openMenu: openMenu, lab: function () { return lab; } };
 })();

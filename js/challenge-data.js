@@ -10,6 +10,12 @@ window.ChallengeData = (function () {
   ];
 
   function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function chance() { return Math.random() < .5; }
+  function shuffle(a) {
+    a = a.slice();
+    for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; }
+    return a;
+  }
   function num(x, d) { return (d == null ? String(+x.toFixed(2)) : x.toFixed(d)).replace('.', ','); }
   var WORD = { lamp: 'lampe', motor: 'moteur', buzzer: 'buzzer', res: 'résistance', led: 'DEL', sw: 'interrupteur', gen: 'générateur' };
   var PREFIX = { lamp: 'L', motor: 'M', buzzer: 'B', res: 'R', led: 'D', sw: 'K', gen: 'G' };
@@ -88,13 +94,15 @@ window.ChallengeData = (function () {
       if (hasK) { els.push({ name: K.name, type: 'sw', x: 170, y: 80, rot: 90 }); wires.push([B.name + '.1', K.name + '.1'], [K.name + '.0', G + '.1']); }
       else wires.push([B.name + '.1', G + '.1']);
     } else {
-      var where = hasK ? pick(['main', 'branch']) : 'none';
+      // Interrupteur dans la branche principale, dans la branche de B, dans les deux ou nulle part
+      var where = hasK ? pick(['main', 'branch', 'both']) : 'none', K2 = where === 'both' ? nm('sw') : K.name;
+      var main = where === 'main' || where === 'both', inB = where === 'branch' || where === 'both';
       els.push({ name: A.name, type: A.type, x: 0, y: 130 });
-      els.push({ name: B.name, type: B.type, x: where === 'branch' ? -60 : 0, y: 240 });
+      els.push({ name: B.name, type: B.type, x: inB ? -60 : 0, y: 240 });
       wires.push([G + '.0', A.name + '.0'], [A.name + '.0', B.name + '.0']);
-      if (where === 'main') { els.push({ name: K.name, type: 'sw', x: 150, y: 65, rot: 90 }); wires.push([G + '.1', K.name + '.0'], [K.name + '.1', A.name + '.1']); }
+      if (main) { els.push({ name: K.name, type: 'sw', x: 150, y: 65, rot: 90 }); wires.push([G + '.1', K.name + '.0'], [K.name + '.1', A.name + '.1']); }
       else wires.push([A.name + '.1', G + '.1']);
-      if (where === 'branch') { els.push({ name: K.name, type: 'sw', x: 70, y: 240 }); wires.push([B.name + '.1', K.name + '.0'], [K.name + '.1', A.name + '.1']); }
+      if (inB) { els.push({ name: K2, type: 'sw', x: 70, y: 240 }); wires.push([B.name + '.1', K2 + '.0'], [K2 + '.1', A.name + '.1']); }
       else wires.push([B.name + '.1', A.name + '.1']);
     }
     var count = {};
@@ -164,159 +172,170 @@ window.ChallengeData = (function () {
   function derivOf(h, ta, tb) { return pairs(h.names(ta), h.names(tb)).filter(function (p) { return h.rel(p[0], p[1]) === 'derivation'; }); }
   function bothCtrl(h, p) { return h.sw.some(function (K) { return h.controls(K, p[0]) && h.controls(K, p[1]); }); }
   function ownSwitch(h, X, others) { return h.sw.some(function (K) { return h.controls(K, X) && others.every(function (Y) { return h.spares(K, Y); }); }); }
-  function art(t) { return { lamp: 'une lampe', motor: 'un moteur', buzzer: 'un buzzer' }[t]; }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function crit(text, test) { return { text: text, test: test }; }
+  function spec(list) { return { lines: list.map(function (c) { return c.text; }), criteria: list }; }
+  function but(list, x) { var i = list.indexOf(x); return list.filter(function (y, j) { return j !== i; }); }
+  function type(h, n) { return h.lab.state(n).type; }
+
+  // Mots pour parler des récepteurs (f : féminin)
+  var REC = ['lamp', 'motor', 'buzzer'];
+  var SAY = {
+    lamp: { un: 'une lampe', le: 'la lampe', les: 'lampes', f: true, act: 'brille', acts: 'brillent', inf: 'briller', starts: 's\'allument', start: 's\'allume', stop: 's\'éteint',
+      gone: 'Si l\'une est dévissée', goneOf: 'Si l\'une de ces deux lampes est dévissée', fail: 'Si une lampe grille' },
+    motor: { un: 'un moteur', le: 'le moteur', les: 'moteurs', act: 'tourne', acts: 'tournent', inf: 'tourner', starts: 'démarrent', start: 'démarre', stop: 's\'arrête',
+      gone: 'Si on débranche l\'un', goneOf: 'Si on débranche l\'un de ces deux moteurs', fail: 'Si un moteur tombe en panne' },
+    buzzer: { un: 'un buzzer', le: 'le buzzer', les: 'buzzers', act: 'sonne', acts: 'sonnent', inf: 'sonner', starts: 'se mettent à sonner', start: 'se met à sonner', stop: 's\'arrête',
+      gone: 'Si on débranche l\'un', goneOf: 'Si on débranche l\'un de ces deux buzzers', fail: 'Si un buzzer tombe en panne' }
+  };
+  var NUM = ['zéro', 'un', 'deux', 'trois', 'quatre', 'cinq', 'six', 'sept', 'huit'];
+  function some(t, n) { return n === 1 ? SAY[t].un : NUM[n] + ' ' + SAY[t].les; }
+  // « une lampe, deux moteurs et un buzzer »
+  function group(types) {
+    var count = {}, order = [];
+    types.forEach(function (t) { if (!count[t]) order.push(t); count[t] = (count[t] || 0) + 1; });
+    var w = order.map(function (t) { return some(t, count[t]); });
+    return w.length > 1 ? w.slice(0, -1).join(', ') + ' et ' + w[w.length - 1] : w[0];
+  }
+  function fem(types) { return types.every(function (t) { return SAY[t].f; }); }
+  function they(types) { return fem(types) ? 'Elles' : 'Ils'; }
+  function agree(types, w) { return w + (fem(types) ? 'e' : '') + (types.length > 1 ? 's' : ''); }
+  function sorted(types) { return types.slice().sort(function (a, b) { return REC.indexOf(a) - REC.indexOf(b); }); }
+  // Triplets de dipôles en dérivation deux à deux dont les types sont exactement « types »
+  function trio(h, types) {
+    var pool = [];
+    types.forEach(function (t) { h.names(t).forEach(function (n) { if (pool.indexOf(n) < 0) pool.push(n); }); });
+    return triples(pool).filter(function (t) {
+      return t.map(function (n) { return type(h, n); }).sort().join() === types.slice().sort().join() && allDeriv(h, t);
+    });
+  }
 
   var G1_SPEC = [
     // 4 : une boucle, deux récepteurs
     function () {
-      var v = pick([['lamp', 'lamp', true], ['lamp', 'motor', false], ['buzzer', 'lamp', true]]), a = v[0], b = v[1], k = v[2];
-      var what = a === b ? 'Deux lampes branchées en série' : cap(art(a)) + ' et ' + art(b) + ' branchés en série';
-      var crit = [
-        { text: what, test: function (h) { return serieOf(h, a, b).length > 0; } },
-        { text: 'Ils fonctionnent quand les interrupteurs sont fermés', test: function (h) { return serieOf(h, a, b).some(function (p) { return h.on(p[0]) && h.on(p[1]); }); } }
+      var a = pick(REC), b = pick(REC), ty = [a, b];
+      var list = [
+        crit(cap(group(sorted(ty))) + ' ' + agree(ty, 'branché') + ' en série', function (h) { return serieOf(h, a, b).length > 0; }),
+        crit(they(ty) + ' fonctionnent quand les interrupteurs sont fermés', function (h) { return serieOf(h, a, b).some(function (p) { return h.on(p[0]) && h.on(p[1]); }); })
       ];
-      if (k) crit.splice(1, 0, { text: 'Un interrupteur commande les deux', test: function (h) { return serieOf(h, a, b).some(function (p) { return bothCtrl(h, p); }); } });
-      return { lines: crit.map(function (c) { return c.text; }), criteria: crit };
+      if (chance()) list.splice(1, 0, crit('Un interrupteur commande les deux', function (h) { return serieOf(h, a, b).some(function (p) { return bothCtrl(h, p); }); }));
+      return spec(list);
     },
     // 5 : deux boucles, deux récepteurs
     function () {
-      var v = pick(['motors', 'own', 'common']), crit;
-      if (v === 'motors') crit = [
-        { text: 'Deux moteurs branchés en dérivation', test: function (h) { return derivOf(h, 'motor', 'motor').length > 0; } },
-        { text: 'Les deux moteurs tournent', test: function (h) { return derivOf(h, 'motor', 'motor').some(function (p) { return h.on(p[0]) && h.on(p[1]); }); } }
-      ];
-      else if (v === 'own') crit = [
-        { text: 'Une lampe et un buzzer branchés en dérivation', test: function (h) { return derivOf(h, 'lamp', 'buzzer').length > 0; } },
-        { text: 'La lampe a son propre interrupteur (qui ne coupe pas le buzzer)', test: function (h) { return derivOf(h, 'lamp', 'buzzer').some(function (p) { return ownSwitch(h, p[0], [p[1]]); }); } },
-        { text: 'Le buzzer a son propre interrupteur (qui n\'éteint pas la lampe)', test: function (h) { return derivOf(h, 'lamp', 'buzzer').some(function (p) { return ownSwitch(h, p[1], [p[0]]); }); } }
-      ];
-      else crit = [
-        { text: 'Une lampe et un moteur branchés en dérivation', test: function (h) { return derivOf(h, 'lamp', 'motor').length > 0; } },
-        { text: 'Un interrupteur commande les deux', test: function (h) { return derivOf(h, 'lamp', 'motor').some(function (p) { return bothCtrl(h, p); }); } }
-      ];
-      return { lines: crit.map(function (c) { return c.text; }), criteria: crit };
+      var a = pick(REC), b = pick(REC), ty = [a, b], v = pick(['both', 'own', 'common', 'single']);
+      if (v === 'single' && a === b) v = 'common';
+      function P(h) { return derivOf(h, a, b); }
+      var list = [crit(cap(group(sorted(ty))) + ' ' + agree(ty, 'branché') + ' en dérivation', function (h) { return P(h).length > 0; })];
+      if (v === 'both') list.push(crit(they(ty) + ' fonctionnent ' + (fem(ty) ? 'toutes' : 'tous') + ' les deux', function (h) { return P(h).some(function (p) { return h.on(p[0]) && h.on(p[1]); }); }));
+      else if (v === 'common') list.push(crit('Un interrupteur commande les deux', function (h) { return P(h).some(function (p) { return bothCtrl(h, p); }); }));
+      else if (v === 'single') list.push(
+        crit('Un interrupteur commande seulement ' + SAY[a].le, function (h) { return P(h).some(function (p) { return ownSwitch(h, p[0], [p[1]]); }); }),
+        crit(cap(SAY[b].le) + ' ' + SAY[b].act + ' tout le temps', function (h) { return P(h).some(function (p) { return ownSwitch(h, p[0], [p[1]]) && h.always(p[1]); }); }));
+      else if (a === b) list.push(crit('Chaque ' + SAY[a].les.slice(0, -1) + ' a son propre interrupteur (qui ne coupe pas l\'autre)', function (h) {
+        return P(h).some(function (p) { return ownSwitch(h, p[0], [p[1]]) && ownSwitch(h, p[1], [p[0]]); });
+      }));
+      else list.push(
+        crit(cap(SAY[a].le) + ' a son propre interrupteur (qui ne coupe pas ' + SAY[b].le + ')', function (h) { return P(h).some(function (p) { return ownSwitch(h, p[0], [p[1]]); }); }),
+        crit(cap(SAY[b].le) + ' a son propre interrupteur (qui ne coupe pas ' + SAY[a].le + ')', function (h) { return P(h).some(function (p) { return ownSwitch(h, p[1], [p[0]]); }); }));
+      return spec(list);
     },
     // 6 : trois boucles, trois récepteurs
     function () {
-      var v = pick(['lamps', 'mix', 'motor']), crit;
-      function trio(h, types) {
-        var pool = [];
-        types.forEach(function (t) { h.names(t).forEach(function (n) { if (pool.indexOf(n) < 0) pool.push(n); }); });
-        return triples(pool).filter(function (t) {
-          var ty = t.map(function (n) { return h.lab.state(n).type; }).sort().join();
-          return ty === types.slice().sort().join() && allDeriv(h, t);
-        });
+      var ty = sorted([pick(REC), pick(REC), pick(REC)]), v = pick(['own', 'common', 'always']);
+      function T(h) { return trio(h, ty); }
+      var list = [crit(cap(group(ty)) + ' ' + agree(ty, 'branché') + ' en dérivation', function (h) { return T(h).length > 0; })];
+      if (v === 'own') list.push(crit((ty[0] === ty[2] ? 'Chaque ' + SAY[ty[0]].les.slice(0, -1) : 'Chaque récepteur') + ' a son propre interrupteur', function (h) {
+        return T(h).some(function (t) { return t.every(function (x) { return ownSwitch(h, x, but(t, x)); }); });
+      }));
+      else if (v === 'common') list.push(crit('Un seul interrupteur les commande ' + (fem(ty) ? 'toutes' : 'tous') + ' les trois', function (h) {
+        return T(h).some(function (t) { return h.sw.some(function (K) { return t.every(function (x) { return h.controls(K, x); }); }); });
+      }));
+      else {
+        var x = pick(ty), rest = but(ty, x);
+        list.push(
+          crit(cap(SAY[x].un) + ' ' + SAY[x].act + ' tout le temps', function (h) { return T(h).some(function (t) { return t.some(function (z) { return type(h, z) === x && h.always(z); }); }); }),
+          crit('Les deux autres ont ' + (fem(rest) ? 'chacune' : 'chacun') + ' leur propre interrupteur', function (h) {
+            return T(h).some(function (t) {
+              return t.some(function (z) { return type(h, z) === x && h.always(z) && but(t, z).every(function (y) { return ownSwitch(h, y, but(t, y)); }); });
+            });
+          }));
       }
-      if (v === 'lamps') crit = [
-        { text: 'Trois lampes branchées en dérivation', test: function (h) { return trio(h, ['lamp', 'lamp', 'lamp']).length > 0; } },
-        { text: 'Chaque lampe a son propre interrupteur', test: function (h) { return trio(h, ['lamp', 'lamp', 'lamp']).some(function (t) { return t.every(function (x) { return ownSwitch(h, x, t.filter(function (y) { return y !== x; })); }); }); } }
-      ];
-      else if (v === 'mix') crit = [
-        { text: 'Une lampe, un moteur et un buzzer branchés en dérivation', test: function (h) { return trio(h, ['lamp', 'motor', 'buzzer']).length > 0; } },
-        { text: 'Un seul interrupteur les commande tous les trois', test: function (h) { return trio(h, ['lamp', 'motor', 'buzzer']).some(function (t) { return h.sw.some(function (K) { return t.every(function (x) { return h.controls(K, x); }); }); }); } }
-      ];
-      else crit = [
-        { text: 'Un moteur et deux lampes branchés en dérivation', test: function (h) { return trio(h, ['motor', 'lamp', 'lamp']).length > 0; } },
-        { text: 'Le moteur tourne tout le temps', test: function (h) { return trio(h, ['motor', 'lamp', 'lamp']).some(function (t) { return t.some(function (x) { return h.lab.state(x).type === 'motor' && h.always(x); }); }); } },
-        { text: 'Chaque lampe a son propre interrupteur', test: function (h) { return trio(h, ['motor', 'lamp', 'lamp']).some(function (t) { var L = t.filter(function (x) { return h.lab.state(x).type === 'lamp'; }); return ownSwitch(h, L[0], [L[1]]) && ownSwitch(h, L[1], [L[0]]); }); } }
-      ];
-      return { lines: crit.map(function (c) { return c.text; }), criteria: crit };
+      return spec(list);
     }
   ];
 
   var G1_BEHAVIOUR = [
     function () {
-      var v = pick(['motor', 'dep', 'bell']), crit;
-      if (v === 'motor') crit = [
-        { text: 'Une lampe qui s\'allume avec un interrupteur', test: function (h) { return h.names('lamp').some(function (L) { return h.sw.some(function (K) { return h.controls(K, L); }); }); } },
-        { text: 'Un moteur qui tourne tout le temps', test: function (h) { return h.names('motor').some(h.always); } }
-      ];
-      else if (v === 'dep') crit = [
-        { text: 'Deux lampes qui s\'allument et s\'éteignent ensemble avec un interrupteur', test: function (h) { return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return bothCtrl(h, p); }); } },
-        { text: 'Si l\'une est dévissée, l\'autre s\'éteint aussi', test: function (h) { return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return bothCtrl(h, p) && !h.survives(p[0], p[1]) && !h.survives(p[1], p[0]); }); } }
-      ];
-      else crit = [
-        { text: 'Un buzzer qui sonne quand on ferme un interrupteur', test: function (h) { return h.names('buzzer').some(function (B) { return h.sw.some(function (K) { return h.controls(K, B); }); }); } },
-        { text: 'Une lampe qui reste toujours allumée', test: function (h) { return h.names('lamp').some(h.always); } }
-      ];
-      return { lines: crit.map(function (c) { return c.text; }), criteria: crit };
+      if (chance()) {
+        var a = pick(REC), b = pick(but(REC, a));
+        return spec([
+          crit(cap(SAY[a].un) + ' qui ' + SAY[a].start + ' avec un interrupteur', function (h) { return h.names(a).some(function (X) { return h.sw.some(function (K) { return h.controls(K, X); }); }); }),
+          crit(cap(SAY[b].un) + ' qui ' + SAY[b].act + ' tout le temps', function (h) { return h.names(b).some(h.always); })
+        ]);
+      }
+      var t = pick(REC), s = SAY[t];
+      function P(h) { return pairs(h.names(t), h.names(t)).filter(function (p) { return bothCtrl(h, p); }); }
+      return spec([
+        crit('Deux ' + s.les + ' qui ' + s.starts + ' ensemble avec un interrupteur', function (h) { return P(h).length > 0; }),
+        crit(s.gone + ', l\'autre ' + s.stop + ' aussi', function (h) { return P(h).some(function (p) { return !h.survives(p[0], p[1]) && !h.survives(p[1], p[0]); }); })
+      ]);
     },
     function () {
-      var v = pick(['indep', 'own', 'general']), crit;
-      if (v === 'indep') crit = [
-        { text: 'Deux lampes qui s\'allument ensemble avec un seul interrupteur', test: function (h) { return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return bothCtrl(h, p); }); } },
-        { text: 'Si l\'une est dévissée, l\'autre continue de briller', test: function (h) { return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return bothCtrl(h, p) && h.survives(p[0], p[1]) && h.survives(p[1], p[0]); }); } }
-      ];
-      else if (v === 'own') crit = [
-        { text: 'Deux lampes, chacune allumée et éteinte par son propre interrupteur', test: function (h) { return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return ownSwitch(h, p[0], [p[1]]) && ownSwitch(h, p[1], [p[0]]); }); } }
-      ];
-      else crit = [
-        { text: 'Un interrupteur qui coupe à la fois le moteur et la lampe', test: function (h) { return pairs(h.names('motor'), h.names('lamp')).some(function (p) { return bothCtrl(h, p); }); } },
-        { text: 'Un autre interrupteur qui éteint seulement la lampe', test: function (h) { return pairs(h.names('motor'), h.names('lamp')).some(function (p) { return bothCtrl(h, p) && ownSwitch(h, p[1], [p[0]]); }); } }
-      ];
-      return { lines: crit.map(function (c) { return c.text; }), criteria: crit };
+      var v = pick(['indep', 'own', 'general']), a = pick(REC), b = pick(but(REC, a));
+      if (v === 'indep') {
+        var s = SAY[a];
+        return spec([
+          crit('Deux ' + s.les + ' qui ' + s.starts + ' ensemble avec un seul interrupteur', function (h) { return pairs(h.names(a), h.names(a)).some(function (p) { return bothCtrl(h, p); }); }),
+          crit(s.gone + ', l\'autre continue de ' + s.inf, function (h) { return pairs(h.names(a), h.names(a)).some(function (p) { return bothCtrl(h, p) && h.survives(p[0], p[1]) && h.survives(p[1], p[0]); }); })
+        ]);
+      }
+      if (v === 'own') {
+        if (chance()) b = a;
+        var ty = sorted([a, b]);
+        return spec([crit(cap(group(ty)) + ', ' + (fem(ty) ? 'chacune commandée' : 'chacun commandé') + ' par son propre interrupteur', function (h) {
+          return pairs(h.names(a), h.names(b)).some(function (p) { return ownSwitch(h, p[0], [p[1]]) && ownSwitch(h, p[1], [p[0]]); });
+        })]);
+      }
+      return spec([
+        crit('Un interrupteur qui coupe à la fois ' + SAY[a].le + ' et ' + SAY[b].le, function (h) { return pairs(h.names(a), h.names(b)).some(function (p) { return bothCtrl(h, p); }); }),
+        crit('Un autre interrupteur qui coupe seulement ' + SAY[b].le, function (h) { return pairs(h.names(a), h.names(b)).some(function (p) { return bothCtrl(h, p) && ownSwitch(h, p[1], [p[0]]); }); })
+      ]);
     },
     function () {
-      var v = pick(['moto', 'mixed', 'general']), crit;
-      if (v === 'moto') crit = [
-        { text: 'Trois lampes qui s\'allument ensemble avec un seul interrupteur', test: function (h) { return triples(h.names('lamp')).some(function (t) { return h.sw.some(function (K) { return t.every(function (x) { return h.controls(K, x); }); }); }); } },
-        { text: 'Si une lampe grille, les deux autres restent allumées', test: function (h) { return triples(h.names('lamp')).some(function (t) { return t.every(function (x) { return t.every(function (y) { return x === y || h.survives(x, y); }); }); }); } }
-      ];
-      else if (v === 'mixed') crit = [
-        { text: 'Une lampe toujours allumée', test: function (h) { return h.names('lamp').some(h.always); } },
-        { text: 'Deux autres lampes qui s\'allument ensemble avec un même interrupteur', test: function (h) { return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return bothCtrl(h, p) && !h.always(p[0]) && !h.always(p[1]); }); } },
-        { text: 'Si l\'une de ces deux lampes est dévissée, l\'autre reste allumée', test: function (h) { return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return bothCtrl(h, p) && h.survives(p[0], p[1]) && h.survives(p[1], p[0]); }); } }
-      ];
-      else crit = [
-        { text: 'Deux lampes, chacune commandée par son propre interrupteur', test: function (h) { return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return ownSwitch(h, p[0], [p[1]]) && ownSwitch(h, p[1], [p[0]]); }); } },
-        { text: 'Un interrupteur général qui éteint les deux lampes', test: function (h) { return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return ownSwitch(h, p[0], [p[1]]) && ownSwitch(h, p[1], [p[0]]) && bothCtrl(h, p); }); } }
-      ];
-      return { lines: crit.map(function (c) { return c.text; }), criteria: crit };
+      var v = pick(['three', 'mixed', 'general']), a = pick(REC), b = pick(REC), s = SAY[a];
+      if (v === 'three') {
+        var T = function (h) { return triples(h.names(a)).filter(function (t) { return h.sw.some(function (K) { return t.every(function (x) { return h.controls(K, x); }); }); }); };
+        return spec([
+          crit('Trois ' + s.les + ' qui ' + s.starts + ' ensemble avec un seul interrupteur', function (h) { return T(h).length > 0; }),
+          crit(s.fail + ', les deux autres continuent de ' + s.inf, function (h) { return T(h).some(function (t) { return t.every(function (x) { return t.every(function (y) { return x === y || h.survives(x, y); }); }); }); })
+        ]);
+      }
+      if (v === 'mixed') {
+        var u = SAY[b];
+        var P = function (h) { return pairs(h.names(b), h.names(b)).filter(function (p) { return bothCtrl(h, p) && !h.always(p[0]) && !h.always(p[1]); }); };
+        return spec([
+          crit(cap(s.un) + ' qui ' + s.act + ' tout le temps', function (h) { return h.names(a).some(h.always); }),
+          crit('Deux ' + (a === b ? 'autres ' : '') + u.les + ' qui ' + u.starts + ' ensemble avec un même interrupteur', function (h) { return P(h).length > 0; }),
+          crit(u.goneOf + ', l\'autre continue de ' + u.inf, function (h) { return P(h).some(function (p) { return h.survives(p[0], p[1]) && h.survives(p[1], p[0]); }); })
+        ]);
+      }
+      var ty = sorted([a, b]);
+      function both2(h) { return pairs(h.names(a), h.names(b)).filter(function (p) { return ownSwitch(h, p[0], [p[1]]) && ownSwitch(h, p[1], [p[0]]); }); }
+      return spec([
+        crit(cap(group(ty)) + ', ' + (fem(ty) ? 'chacune commandée' : 'chacun commandé') + ' par son propre interrupteur', function (h) { return both2(h).length > 0; }),
+        crit('Un interrupteur général qui coupe les deux', function (h) { return both2(h).some(function (p) { return bothCtrl(h, p); }); })
+      ]);
     }
   ];
 
   /* ================= Groupe 2 : circuits réalistes ================= */
   var G2_PALETTE = ['gen', 'lamp', 'motor', 'led', 'res', 'buzzer', 'sw', 'voltmeter', 'ammeter', 'ohmmeter'];
-  function lampV(opt) { return ['3 V', '6 V', '12 V'][opt]; }
-  function crit(text, test) { return { text: text, test: test }; }
   function both(h, p, f) { return f(p[0]) && f(p[1]); }
-
-  var G2_SPEC = [
-    function () {
-      return pick([
-        [crit('Deux lampes de 3 V branchées en série', function (h) { return serieOfOpt(h, 'lamp', 0, 'lamp', 0).length > 0; }),
-          crit('Elles brillent normalement', function (h) { return serieOfOpt(h, 'lamp', 0, 'lamp', 0).some(function (p) { return both(h, p, h.normal); }); })],
-        [crit('Une lampe de 12 V commandée par un interrupteur', function (h) { return h.names('lamp', 2).some(function (L) { return h.sw.some(function (K) { return h.controls(K, L); }); }); }),
-          crit('Elle brille normalement', function (h) { return h.names('lamp', 2).some(h.normal); })],
-        [crit('Un moteur de 6 V et une lampe de 6 V branchés en dérivation', function (h) { return derivOfOpt(h, 'motor', 1, 'lamp', 1).length > 0; }),
-          crit('Le moteur tourne normalement', function (h) { return derivOfOpt(h, 'motor', 1, 'lamp', 1).some(function (p) { return h.normal(p[0]); }); })]
-      ]);
-    },
-    function () {
-      return pick([
-        [crit('Deux lampes de 6 V branchées en série', function (h) { return serieOfOpt(h, 'lamp', 1, 'lamp', 1).length > 0; }),
-          crit('Un interrupteur qui commande les deux', function (h) { return serieOfOpt(h, 'lamp', 1, 'lamp', 1).some(function (p) { return bothCtrl(h, p); }); }),
-          crit('Elles brillent normalement', function (h) { return serieOfOpt(h, 'lamp', 1, 'lamp', 1).some(function (p) { return both(h, p, h.normal); }); })],
-        [crit('Un moteur de 3 V et une lampe de 3 V branchés en dérivation', function (h) { return derivOfOpt(h, 'motor', 0, 'lamp', 0).length > 0; }),
-          crit('Ils fonctionnent normalement', function (h) { return derivOfOpt(h, 'motor', 0, 'lamp', 0).some(function (p) { return both(h, p, h.normal); }); })],
-        [crit('Une lampe de 6 V et un buzzer branchés en dérivation', function (h) { return derivOfOpt(h, 'lamp', 1, 'buzzer', null).length > 0; }),
-          crit('La lampe brille normalement', function (h) { return derivOfOpt(h, 'lamp', 1, 'buzzer', null).some(function (p) { return h.normal(p[0]); }); }),
-          crit('Le buzzer sonne', function (h) { return derivOfOpt(h, 'lamp', 1, 'buzzer', null).some(function (p) { return h.on(p[1]); }); })]
-      ]);
-    },
-    function () {
-      return pick([
-        [crit('Une lampe de 6 V en dérivation de deux lampes de 3 V branchées en série', function (h) { return mixed(h, 'lamp', 1, 'lamp', 0).length > 0; }),
-          crit('Les trois lampes brillent normalement', function (h) { return mixed(h, 'lamp', 1, 'lamp', 0).some(function (t) { return t.every(h.normal); }); })],
-        [crit('Un moteur de 12 V en dérivation de deux lampes de 6 V branchées en série', function (h) { return mixed(h, 'motor', 2, 'lamp', 1).length > 0; }),
-          crit('Tout fonctionne normalement', function (h) { return mixed(h, 'motor', 2, 'lamp', 1).some(function (t) { return t.every(h.normal); }); })],
-        [crit('Trois lampes de 3 V branchées en dérivation', function (h) { return triples(h.names('lamp', 0)).some(function (t) { return allDeriv(h, t); }); }),
-          crit('Chacune a son propre interrupteur', function (h) { return triples(h.names('lamp', 0)).some(function (t) { return allDeriv(h, t) && t.every(function (x) { return ownSwitch(h, x, t.filter(function (y) { return y !== x; })); }); }); }),
-          crit('Elles brillent normalement', function (h) { return nNormal(h, 'lamp', 0, 3); })]
-      ]);
-    }
-  ];
+  function volts(t, o) { return Comp.TYPES[t].opts[o].u + ' V'; }
+  // « une lampe de 6 V », « deux moteurs de 3 V »
+  function dip(t, o, n) { return some(t, n) + ' de ' + volts(t, o); }
+  function pron(t) { return SAY[t].f ? 'Elle' : 'Il'; }
   function serieOfOpt(h, ta, oa, tb, ob) { return pairs(h.names(ta, oa), h.names(tb, ob)).filter(function (p) { return h.rel(p[0], p[1]) === 'serie'; }); }
   function derivOfOpt(h, ta, oa, tb, ob) { return pairs(h.names(ta, oa), h.names(tb, ob)).filter(function (p) { return h.rel(p[0], p[1]) === 'derivation'; }); }
   // Un dipôle (ta, oa) en dérivation de deux dipôles (tb, ob) en série
@@ -327,109 +346,223 @@ window.ChallengeData = (function () {
     });
     return out;
   }
+  function ctrl(h, X) { return h.sw.some(function (K) { return h.controls(K, X); }); }
+
+  var G2_SPEC = [
+    function () {
+      var v = pick(['serie', 'switch', 'deriv']), t = pick(['lamp', 'motor']), o;
+      if (v === 'serie') {
+        o = pick([0, 1]);
+        return [crit(cap(dip(t, o, 2)) + ' ' + agree([t, t], 'branché') + ' en série', function (h) { return serieOfOpt(h, t, o, t, o).length > 0; }),
+          crit(they([t]) + ' ' + SAY[t].acts + ' normalement', function (h) { return serieOfOpt(h, t, o, t, o).some(function (p) { return both(h, p, h.normal); }); })];
+      }
+      o = pick([0, 1, 2]);
+      if (v === 'switch') return [crit(cap(dip(t, o, 1)) + ' ' + agree([t], 'commandé') + ' par un interrupteur', function (h) { return h.names(t, o).some(function (X) { return ctrl(h, X); }); }),
+        crit(pron(t) + ' ' + SAY[t].act + ' normalement', function (h) { return h.names(t, o).some(h.normal); })];
+      var a = t, b = t === 'lamp' ? 'motor' : 'lamp';
+      return [crit(cap(dip(a, o, 1)) + ' et ' + dip(b, o, 1) + ' branchés en dérivation', function (h) { return derivOfOpt(h, a, o, b, o).length > 0; }),
+        crit(cap(SAY[a].le) + ' ' + SAY[a].act + ' normalement', function (h) { return derivOfOpt(h, a, o, b, o).some(function (p) { return h.normal(p[0]); }); })];
+    },
+    function () {
+      var v = pick(['serie', 'pair', 'deriv', 'buzzer']), t = pick(['lamp', 'motor']), o = pick([0, 1, 2]);
+      if (v === 'serie') {
+        o = pick([0, 1]);
+        return [crit(cap(dip(t, o, 2)) + ' ' + agree([t, t], 'branché') + ' en série', function (h) { return serieOfOpt(h, t, o, t, o).length > 0; }),
+          crit('Un interrupteur qui commande les deux', function (h) { return serieOfOpt(h, t, o, t, o).some(function (p) { return bothCtrl(h, p); }); }),
+          crit(they([t]) + ' ' + SAY[t].acts + ' normalement', function (h) { return serieOfOpt(h, t, o, t, o).some(function (p) { return both(h, p, h.normal); }); })];
+      }
+      // Lampe et moteur de 3 V : même intensité nominale, ils fonctionnent normalement en série sous 6 V
+      if (v === 'pair') return [crit('Une lampe de 3 V et un moteur de 3 V branchés en série', function (h) { return serieOfOpt(h, 'lamp', 0, 'motor', 0).length > 0; }),
+        crit('Ils fonctionnent normalement', function (h) { return serieOfOpt(h, 'lamp', 0, 'motor', 0).some(function (p) { return both(h, p, h.normal); }); })];
+      if (v === 'deriv') return [crit(cap(dip('motor', o, 1)) + ' et ' + dip('lamp', o, 1) + ' branchés en dérivation', function (h) { return derivOfOpt(h, 'motor', o, 'lamp', o).length > 0; }),
+        crit('Ils fonctionnent normalement', function (h) { return derivOfOpt(h, 'motor', o, 'lamp', o).some(function (p) { return both(h, p, h.normal); }); })];
+      return [crit(cap(dip('lamp', o, 1)) + ' et un buzzer branchés en dérivation', function (h) { return derivOfOpt(h, 'lamp', o, 'buzzer', null).length > 0; }),
+        crit('La lampe brille normalement', function (h) { return derivOfOpt(h, 'lamp', o, 'buzzer', null).some(function (p) { return h.normal(p[0]); }); }),
+        crit('Le buzzer sonne', function (h) { return derivOfOpt(h, 'lamp', o, 'buzzer', null).some(function (p) { return h.on(p[1]); }); })];
+    },
+    function () {
+      if (chance()) {
+        // Branche seule de tension nominale double de celle des deux dipôles identiques en série
+        var d = pick([[['lamp', 1], 'lamp'], [['motor', 1], 'lamp'], [['lamp', 1], 'motor'], [['motor', 1], 'motor'], [['lamp', 2], 'lamp'], [['motor', 2], 'lamp'], [['lamp', 2], 'motor'], [['motor', 2], 'motor']]);
+        var S = d[0][0], so = d[0][1], T = d[1], to = so - 1;
+        return [crit(cap(dip(S, so, 1)) + ' en dérivation de ' + dip(T, to, 2) + ' ' + agree([T, T], 'branché') + ' en série', function (h) { return mixed(h, S, so, T, to).length > 0; }),
+          crit('Tout fonctionne normalement', function (h) { return mixed(h, S, so, T, to).some(function (t) { return t.every(h.normal); }); })];
+      }
+      var t = pick(['lamp', 'motor']), o = pick([0, 1, 2]);
+      function T3(h) { return triples(h.names(t, o)).filter(function (x) { return allDeriv(h, x); }); }
+      return [crit(cap(dip(t, o, 3)) + ' ' + agree([t, t], 'branché') + ' en dérivation', function (h) { return T3(h).length > 0; }),
+        crit((SAY[t].f ? 'Chacune' : 'Chacun') + ' a son propre interrupteur', function (h) { return T3(h).some(function (x) { return x.every(function (y) { return ownSwitch(h, y, but(x, y)); }); }); }),
+        crit(they([t]) + ' ' + SAY[t].acts + ' normalement', function (h) { return nNormal(h, t, o, 3); })];
+    }
+  ];
 
   // Défis : meilleure chaleur / lumière calculées d'avance avec le matériel disponible
-  function bestHeat() {
+  function bestHeat(n) {
+    var R = Comp.TYPES.res.opts, best = 0;
+    function ok(I, r) { return I * Math.sqrt(r) <= 1.15; }
+    GEN_V.forEach(function (U) {
+      R.forEach(function (a) {
+        if (n === 1) { if (ok(U / a, a)) best = Math.max(best, U * U / a); return; }
+        R.forEach(function (b) {
+          if (ok(U / a, a) && ok(U / b, b)) best = Math.max(best, U * U / a + U * U / b);
+          var I = U / (a + b);
+          if (ok(I, a) && ok(I, b)) best = Math.max(best, U * I);
+        });
+      });
+    });
+    return best;
+  }
+  // Lampe la plus lumineuse sans surchauffe (chaque lampe seule sur le générateur)
+  function bestLamp() {
     var best = 0;
-    GEN_V.forEach(function (U) { [47, 220, 1000].forEach(function (R) { if (U / Math.sqrt(R) <= 1.15) best = Math.max(best, U * U / R); }); });
+    Comp.TYPES.lamp.opts.forEach(function (l) { GEN_V.forEach(function (U) { if (U / l.u <= 1.15) best = Math.max(best, U * U * l.i / l.u); }); });
     return best;
   }
   var G2_CHALLENGE = [
     function () {
-      var v = pick(['heat', 'light', 'buzz']);
+      var v = pick(['heat', 'light', 'buzz']), n;
       if (v === 'heat') {
-        var best = bestHeat();
+        n = pick([1, 2]);
+        var best = bestHeat(n);
         return {
-          stock: { gen: 1, res: 1 },
-          intro: 'Je veux me chauffer le plus fort possible avec une seule résistance, sans qu\'elle surchauffe.',
+          stock: { gen: 1, res: n },
+          intro: n === 1 ? 'Je veux me chauffer le plus fort possible avec une seule résistance, sans qu\'elle surchauffe.' : 'Je veux me chauffer le plus fort possible avec deux résistances, sans qu\'aucune ne surchauffe.',
           criteria: [
-            crit('La résistance chauffe le plus possible', function (h) { return h.names('res').some(function (r) { var s = h.s(r); return s.P >= best * .95; }); }),
-            crit('Elle ne surchauffe pas', function (h) { return h.names('res').length > 0 && h.names('res').every(h.safe); })
+            crit(n === 1 ? 'La résistance chauffe le plus possible' : 'Les résistances chauffent le plus possible', function (h) { return h.names('res').reduce(function (t, r) { return t + h.s(r).P; }, 0) >= best * .95; }),
+            crit(n === 1 ? 'Elle ne surchauffe pas' : 'Aucune ne surchauffe', function (h) { return h.names('res').length > 0 && h.names('res').every(h.safe); })
           ]
         };
       }
-      if (v === 'light') return {
-        stock: { gen: 1, lamp: 2 },
-        intro: 'Je veux la lumière la plus forte possible avec deux lampes, sans qu\'aucune ne surchauffe.',
-        criteria: [
-          crit('Les deux lampes éclairent le plus possible', function (h) { return h.names('lamp').reduce(function (t, n) { return t + h.s(n).P; }, 0) >= 2.4 * .95; }),
-          crit('Aucune lampe ne surchauffe', function (h) { return h.names('lamp').length > 0 && h.names('lamp').every(h.safe); })
-        ]
-      };
+      if (v === 'light') {
+        n = pick([1, 2, 3]);
+        var max = bestLamp() * n;
+        return {
+          stock: { gen: 1, lamp: n },
+          intro: n === 1 ? 'Je veux la lumière la plus forte possible avec une seule lampe, sans qu\'elle surchauffe.' : 'Je veux la lumière la plus forte possible avec ' + NUM[n] + ' lampes, sans qu\'aucune ne surchauffe.',
+          criteria: [
+            crit(n === 1 ? 'La lampe éclaire le plus possible' : 'Les ' + NUM[n] + ' lampes éclairent le plus possible', function (h) { return h.names('lamp').reduce(function (t, x) { return t + h.s(x).P; }, 0) >= max * .95; }),
+            crit(n === 1 ? 'Elle ne surchauffe pas' : 'Aucune lampe ne surchauffe', function (h) { return h.names('lamp').length > 0 && h.names('lamp').every(h.safe); })
+          ]
+        };
+      }
+      n = pick([2, 3, 4]);
       return {
-        stock: { gen: 1, buzzer: 3 },
-        intro: 'Je veux trois buzzers que je peux faire sonner autant que je veux, chacun indépendamment des autres.',
+        stock: { gen: 1, buzzer: n },
+        intro: 'Je veux ' + NUM[n] + ' buzzers que je peux faire sonner autant que je veux, chacun indépendamment des autres.',
         criteria: [
-          crit('Trois buzzers qui sonnent', function (h) { return h.names('buzzer').filter(h.on).length >= 3; }),
+          crit(cap(NUM[n]) + ' buzzers qui sonnent', function (h) { return h.names('buzzer').filter(h.on).length >= n; }),
           crit('Chacun s\'arrête avec son propre interrupteur, sans couper les autres', function (h) {
             var b = h.names('buzzer');
-            return b.length >= 3 && b.every(function (x) { return ownSwitch(h, x, b.filter(function (y) { return y !== x; })); });
+            return b.length >= n && b.every(function (x) { return ownSwitch(h, x, but(b, x)); });
           })
         ]
       };
     },
     function () {
-      return pick([
-        { intro: 'Je veux deux lampes qui brillent normalement, et pouvoir éteindre chacune sans éteindre l\'autre.',
+      var v = pick(['two', 'fan', 'bell', 'night']);
+      if (v === 'two') {
+        var o = pick([null, 0, 1, 2]), what = o == null ? 'deux lampes' : dip('lamp', o, 2);
+        return { intro: 'Je veux ' + what + ' qui brillent normalement, et pouvoir éteindre chacune sans éteindre l\'autre.',
           criteria: [
-            crit('Deux lampes qui brillent normalement', function (h) { return h.names('lamp').filter(h.normal).length >= 2; }),
+            crit(cap(what) + ' qui brillent normalement', function (h) { return h.names('lamp', o).filter(h.normal).length >= 2; }),
             crit('Chacune s\'éteint avec son propre interrupteur, sans éteindre l\'autre', function (h) {
-              return pairs(h.names('lamp'), h.names('lamp')).some(function (p) { return both(h, p, h.normal) && ownSwitch(h, p[0], [p[1]]) && ownSwitch(h, p[1], [p[0]]); });
-            })] },
-        { intro: 'Je veux un ventilateur (un moteur) qui tourne normalement et une veilleuse (une DEL) allumée en même temps, avec un seul générateur.',
-          criteria: [
-            crit('Le moteur tourne normalement', function (h) { return h.names('motor').some(h.normal); }),
-            crit('La DEL brille normalement en même temps', function (h) { return h.names('led').some(h.normal); })] },
-        { intro: 'Une sonnette : un buzzer qui sonne seulement quand on ferme l\'interrupteur, et une lampe de 6 V qui brille normalement tout le temps.',
-          criteria: [
-            crit('Un buzzer qui sonne seulement quand on ferme l\'interrupteur', function (h) { return h.names('buzzer').some(function (B) { return h.sw.some(function (K) { return h.controls(K, B); }); }); }),
-            crit('Une lampe de 6 V qui brille normalement tout le temps', function (h) { return h.names('lamp', 1).some(function (L) { return h.normal(L) && h.always(L); }); })] }
-      ]);
+              return pairs(h.names('lamp', o), h.names('lamp', o)).some(function (p) { return both(h, p, h.normal) && ownSwitch(h, p[0], [p[1]]) && ownSwitch(h, p[1], [p[0]]); });
+            })] };
+      }
+      if (v === 'fan') return { intro: 'Je veux un ventilateur (un moteur) qui tourne normalement et une veilleuse (une DEL) allumée en même temps, avec un seul générateur.',
+        criteria: [
+          crit('Le moteur tourne normalement', function (h) { return h.names('motor').some(h.normal); }),
+          crit('La DEL brille normalement en même temps', function (h) { return h.names('led').some(h.normal); })] };
+      if (v === 'night') return { intro: 'Une veilleuse (une DEL) qui brille normalement tout le temps, et un buzzer qui sonne seulement quand on ferme l\'interrupteur.',
+        criteria: [
+          crit('Une DEL qui brille normalement tout le temps', function (h) { return h.names('led').some(function (D) { return h.normal(D) && h.always(D); }); }),
+          crit('Un buzzer qui sonne seulement quand on ferme l\'interrupteur', function (h) { return h.names('buzzer').some(function (B) { return ctrl(h, B); }); })] };
+      var lo = pick([0, 1, 2]);
+      return { intro: 'Une sonnette : un buzzer qui sonne seulement quand on ferme l\'interrupteur, et ' + dip('lamp', lo, 1) + ' qui brille normalement tout le temps.',
+        criteria: [
+          crit('Un buzzer qui sonne seulement quand on ferme l\'interrupteur', function (h) { return h.names('buzzer').some(function (B) { return ctrl(h, B); }); }),
+          crit(cap(dip('lamp', lo, 1)) + ' qui brille normalement tout le temps', function (h) { return h.names('lamp', lo).some(function (L) { return h.normal(L) && h.always(L); }); })] };
     },
     function () {
-      return pick([
-        { intro: 'Une guirlande : quatre lampes de 3 V qui brillent toutes normalement.',
-          criteria: [crit('Quatre lampes de 3 V qui brillent normalement', function (h) { return nNormal(h, 'lamp', 0, 4); })] },
-        { intro: 'Six lampes de 6 V qui brillent toutes normalement.',
-          criteria: [crit('Six lampes de 6 V qui brillent normalement', function (h) { return nNormal(h, 'lamp', 1, 6); })] },
-        { intro: 'Un moteur de 12 V et deux lampes de 6 V qui fonctionnent tous normalement, avec un interrupteur qui commande seulement le moteur.',
-          criteria: [
-            crit('Un moteur de 12 V et deux lampes de 6 V qui fonctionnent normalement', function (h) { return nNormal(h, 'motor', 2, 1) && nNormal(h, 'lamp', 1, 2); }),
-            crit('Un interrupteur qui commande seulement le moteur', function (h) {
-              var L = h.names('lamp', 1).filter(h.normal);
-              return h.names('motor', 2).some(function (M) { return h.normal(M) && ownSwitch(h, M, L); });
-            })] }
-      ]);
+      if (chance()) {
+        var g = pick([[0, 4], [0, 5], [0, 6], [1, 4], [1, 6]]), o = g[0], n = g[1];
+        return { intro: 'Une guirlande : ' + dip('lamp', o, n) + ' qui brillent toutes normalement.',
+          criteria: [crit(cap(dip('lamp', o, n)) + ' qui brillent normalement', function (h) { return nNormal(h, 'lamp', o, n); })] };
+      }
+      var m = pick([[2, 1], [2, 2], [1, 0], [1, 1], [0, 0]]), mo = m[0], lo = m[1];
+      return { intro: cap(dip('motor', mo, 1)) + ' et ' + dip('lamp', lo, 2) + ' qui fonctionnent tous normalement, avec un interrupteur qui commande seulement le moteur.',
+        criteria: [
+          crit(cap(dip('motor', mo, 1)) + ' et ' + dip('lamp', lo, 2) + ' qui fonctionnent normalement', function (h) { return nNormal(h, 'motor', mo, 1) && nNormal(h, 'lamp', lo, 2); }),
+          crit('Un interrupteur qui commande seulement le moteur', function (h) {
+            var L = h.names('lamp', lo).filter(h.normal);
+            return h.names('motor', mo).some(function (M) { return h.normal(M) && ownSwitch(h, M, L); });
+          })] };
     }
   ];
 
   // Valeurs imposées : générateur (et parfois récepteurs) bloqués sur un réglage
+  // need : { type: [option bloquée, nombre] } ; K : un interrupteur doit tout éteindre
+  function forced(U, need, K) {
+    var types = Object.keys(need), lock = {}, w = [], crits = [];
+    types.forEach(function (t) {
+      var o = need[t][0], n = need[t][1];
+      lock[t] = o;
+      w.push(some(t, n));
+      crits.push(crit(cap(some(t, n)) + ' qui ' + (n > 1 ? SAY[t].acts : SAY[t].act) + ' normalement', function (h) { return nNormal(h, t, o, n); }));
+    });
+    var o0 = need[types[0]][0], verb = types.length > 1 ? 'fonctionner' : SAY[types[0]].inf;
+    var locked = (types.length > 1 ? 'les ' + SAY[types[0]].les + ' et les ' + SAY[types[1]].les : 'les ' + SAY[types[0]].les) + ' sur ' + volts(types[0], o0);
+    var intro = 'Le générateur est bloqué sur ' + U + ' V et ' + locked + ' : fais ' + verb + ' normalement ' + w.join(' et ');
+    if (K) {
+      intro += ', avec un interrupteur qui les éteint tous';
+      crits.push(crit('Un interrupteur qui les éteint tous', function (h) {
+        var all = [];
+        types.forEach(function (t) { all = all.concat(h.names(t, need[t][0]).filter(h.normal)); });
+        return h.sw.some(function (S) { return all.every(function (x) { return h.controls(S, x); }); });
+      }));
+    }
+    if (K && types.length === 1 && SAY[types[0]].f) { intro = intro.replace('les éteint tous', 'les éteint toutes'); crits[crits.length - 1].text = 'Un interrupteur qui les éteint toutes'; }
+    return { gen: GEN_V.indexOf(U), lock: lock, intro: intro + '.', criteria: crits };
+  }
   var G2_FORCED = [
     function () {
       return pick([
-        { gen: 3, lock: { lamp: 1 }, intro: 'Le générateur est bloqué sur 12 V et les lampes sur 6 V : fais briller normalement deux lampes.', criteria: [crit('Deux lampes qui brillent normalement', function (h) { return nNormal(h, 'lamp', 1, 2); })] },
-        { gen: 1, lock: { lamp: 0 }, intro: 'Le générateur est bloqué sur 6 V et les lampes sur 3 V : fais briller normalement deux lampes.', criteria: [crit('Deux lampes qui brillent normalement', function (h) { return nNormal(h, 'lamp', 0, 2); })] },
-        { gen: 3, lock: { motor: 1 }, intro: 'Le générateur est bloqué sur 12 V et les moteurs sur 6 V : fais tourner normalement deux moteurs.', criteria: [crit('Deux moteurs qui tournent normalement', function (h) { return nNormal(h, 'motor', 1, 2); })] }
-      ]);
+        function () { return forced(12, { lamp: [1, 2] }); },
+        function () { return forced(6, { lamp: [0, 2] }); },
+        function () { return forced(12, { motor: [1, 2] }); },
+        function () { return forced(6, { motor: [0, 2] }); },
+        function () { return forced(9, { lamp: [0, 3] }); },
+        function () { return forced(9, { motor: [0, 3] }); },
+        function () { return forced(6, { lamp: [0, 1], motor: [0, 1] }); }
+      ])();
     },
     function () {
       return pick([
-        { gen: 1, lock: { lamp: 0 }, intro: 'Le générateur est bloqué sur 6 V et les lampes sur 3 V : fais briller normalement quatre lampes.', criteria: [crit('Quatre lampes qui brillent normalement', function (h) { return nNormal(h, 'lamp', 0, 4); })] },
-        { gen: 3, lock: { lamp: 1 }, intro: 'Le générateur est bloqué sur 12 V et les lampes sur 6 V : fais briller normalement quatre lampes.', criteria: [crit('Quatre lampes qui brillent normalement', function (h) { return nNormal(h, 'lamp', 1, 4); })] },
-        { gen: 3, lock: { lamp: 0 }, intro: 'Le générateur est bloqué sur 12 V et les lampes sur 3 V : fais briller normalement quatre lampes, avec un interrupteur qui les éteint toutes.',
-          criteria: [crit('Quatre lampes qui brillent normalement', function (h) { return nNormal(h, 'lamp', 0, 4); }),
-            crit('Un interrupteur qui les éteint toutes', function (h) { var L = h.names('lamp', 0).filter(h.normal); return L.length >= 4 && h.sw.some(function (K) { return L.every(function (x) { return h.controls(K, x); }); }); })] }
-      ]);
+        function () { return forced(6, { lamp: [0, 4] }); },
+        function () { return forced(6, { motor: [0, 4] }); },
+        function () { return forced(12, { lamp: [1, 4] }); },
+        function () { return forced(12, { motor: [1, 4] }); },
+        function () { return forced(9, { lamp: [0, 6] }); },
+        function () { return forced(12, { lamp: [0, 4] }, true); },
+        function () { return forced(12, { motor: [0, 4] }, true); },
+        function () { return forced(12, { lamp: [0, 2], motor: [0, 2] }); }
+      ])();
     },
+    // Générateur seul bloqué : trois sortes de dipôles, chacune en nombre suffisant pour former une chaîne à sa tension nominale
     function () {
-      return pick([
-        { gen: 3, intro: 'Le générateur est bloqué sur 12 V : fais fonctionner normalement une lampe de 12 V, deux lampes de 6 V et quatre lampes de 3 V.',
-          criteria: [crit('Une lampe de 12 V qui brille normalement', function (h) { return nNormal(h, 'lamp', 2, 1); }), crit('Deux lampes de 6 V qui brillent normalement', function (h) { return nNormal(h, 'lamp', 1, 2); }), crit('Quatre lampes de 3 V qui brillent normalement', function (h) { return nNormal(h, 'lamp', 0, 4); })] },
-        { gen: 3, intro: 'Le générateur est bloqué sur 12 V : fais fonctionner normalement un moteur de 12 V, deux lampes de 6 V et deux moteurs de 6 V.',
-          criteria: [crit('Un moteur de 12 V qui tourne normalement', function (h) { return nNormal(h, 'motor', 2, 1); }), crit('Deux lampes de 6 V qui brillent normalement', function (h) { return nNormal(h, 'lamp', 1, 2); }), crit('Deux moteurs de 6 V qui tournent normalement', function (h) { return nNormal(h, 'motor', 1, 2); })] },
-        { gen: 1, intro: 'Le générateur est bloqué sur 6 V : fais fonctionner normalement une lampe de 6 V, deux lampes de 3 V et deux moteurs de 3 V.',
-          criteria: [crit('Une lampe de 6 V qui brille normalement', function (h) { return nNormal(h, 'lamp', 1, 1); }), crit('Deux lampes de 3 V qui brillent normalement', function (h) { return nNormal(h, 'lamp', 0, 2); }), crit('Deux moteurs de 3 V qui tournent normalement', function (h) { return nNormal(h, 'motor', 0, 2); })] }
-      ]);
+      var U = pick([6, 12, 12, 12]), kinds = [];
+      ['lamp', 'motor'].forEach(function (t) { Comp.TYPES[t].opts.forEach(function (n, o) { if (U % n.u === 0) kinds.push({ t: t, o: o, n: U / n.u, u: n.u }); }); });
+      var set;
+      do { set = shuffle(kinds).slice(0, 3); } while (set.reduce(function (s, k) { return s + k.n; }, 0) > 8);
+      set.sort(function (a, b) { return b.u - a.u || (a.t < b.t ? -1 : 1); });
+      var w = set.map(function (k) { return dip(k.t, k.o, k.n); });
+      return {
+        gen: GEN_V.indexOf(U),
+        intro: 'Le générateur est bloqué sur ' + U + ' V : fais fonctionner normalement ' + w.slice(0, -1).join(', ') + ' et ' + w[w.length - 1] + '.',
+        criteria: set.map(function (k) {
+          return crit(cap(dip(k.t, k.o, k.n)) + ' qui ' + (k.n > 1 ? SAY[k.t].acts : SAY[k.t].act) + ' normalement', function (h) { return nNormal(h, k.t, k.o, k.n); });
+        })
+      };
     }
   ];
 
@@ -437,7 +570,6 @@ window.ChallengeData = (function () {
   var METERS1 = { voltmeter: 1, ammeter: 1, ohmmeter: 1 };
   function E(name, type, x, y, opt, extra) { var e = { name: name, type: type, x: x, y: y, opt: opt }; for (var k in extra) e[k] = extra[k]; return e; }
   function lock(c) { c.els.forEach(function (e) { if (!/meter/.test(e.type)) e.lock = true; }); c.wires = c.wires.map(function (w) { return { a: w[0], b: w[1], lock: true }; }); return c; }
-  var OPT_V = [3, 6, 9, 12];
 
   // Une boucle : générateur + deux récepteurs en série
   function loop1(gen, A, B) {
@@ -460,6 +592,54 @@ window.ChallengeData = (function () {
       wires: [['G1.0', P[0] + '.0'], [P[0] + '.1', Q[0] + '.0'], [Q[0] + '.1', 'G1.1'], [P[0] + '.0', S[0] + '.0'], [S[0] + '.1', Q[0] + '.1']]
     };
   }
+
+  // Récepteurs des circuits de mesure : lampes et moteurs, résistance Unom / Inom comme dans le labo
+  var KINDS = [];
+  ['lamp', 'motor'].forEach(function (t) { Comp.TYPES[t].opts.forEach(function (n, o) { KINDS.push({ t: t, o: o, u: n.u, R: n.u / n.i }); }); });
+  // Valeurs de fonctionnement : chaque branche est une suite de dipôles en série, les branches sont en dérivation sur le générateur
+  function solve(U, br) {
+    var I = 0, out = [];
+    br.forEach(function (b, j) {
+      var i = U / b.reduce(function (s, k) { return s + k.R; }, 0);
+      I += i;
+      b.forEach(function (k) { out.push({ k: k, U: i * k.R, I: i, ratio: i * k.R / k.u, br: j }); });
+    });
+    return { I: I, parts: out };
+  }
+  function within(U, br, lo, hi) { return solve(U, br).parts.every(function (p) { return p.ratio >= lo - 1e-9 && p.ratio <= hi + 1e-9; }); }
+  // Valeur affichée sans arrondi par les appareils : les lois se vérifient alors exactement sur les nombres lus
+  function exact(v, d) { return Math.abs(v * d - Math.round(v * d)) < 1e-6; }
+  function exactU(v) { return exact(v, v >= 9.995 ? 10 : 100); }
+  function exactI(v) { v *= 1000; return exact(v, v >= 99.95 ? 1 : v >= 9.995 ? 10 : 100); }
+  function readable(U, br) { var s = solve(U, br); return exactI(s.I) && s.parts.every(function (p) { return exactU(p.U) && exactI(p.I); }); }
+  // Toutes les suites de n récepteurs
+  function seqs(n) {
+    var out = [[]];
+    for (var i = 0; i < n; i++) out = [].concat.apply([], out.map(function (c) { return KINDS.map(function (k) { return c.concat([k]); }); }));
+    return out;
+  }
+  // Formes des circuits imposés : nombre de récepteurs, branches, dessin
+  var SHAPES = {
+    loop1: { n: 2, br: function (c) { return [[c[0], c[1]]]; }, draw: loop1 },
+    loop2: { n: 2, br: function (c) { return [[c[0]], [c[1]]]; }, draw: loop2 },
+    loop2s: { n: 3, br: function (c) { return [[c[1], c[2]], [c[0]]]; }, draw: loop2s }
+  };
+  // Tirage d'un circuit imposé : tout fonctionne sans casser (30 % à 110 % du nominal) ; « lisible » = valeurs affichées exactes
+  var drawCache = {};
+  function drawCircuit(shape, legible) {
+    var key = shape + legible, sh = SHAPES[shape];
+    if (!drawCache[key]) {
+      drawCache[key] = [];
+      GEN_V.forEach(function (U) {
+        seqs(sh.n).forEach(function (c) {
+          var br = sh.br(c);
+          if (within(U, br, .3, 1.1) && (!legible || readable(U, br))) drawCache[key].push({ U: U, c: c });
+        });
+      });
+    }
+    var d = pick(drawCache[key]), nm = namer(), parts = d.c.map(function (k) { return [nm(k.t), k.t, k.o]; });
+    return { parts: parts, names: parts.map(function (p) { return p[0]; }), circuit: sh.draw.apply(null, [GEN_V.indexOf(d.U)].concat(parts)) };
+  }
   function U(lab, n) { return lab.state(n).U; }
   function mA(lab, n) { return lab.state(n).I * 1000; }
   function rowU(n, label) { return { k: 'U' + n, label: label || 'Tension aux bornes de ' + n, unit: 'V', tol: .06, expect: function (lab) { return U(lab, n); } }; }
@@ -467,28 +647,18 @@ window.ChallengeData = (function () {
 
   var G3_MEASURE = [
     function () {
-      var d = pick([
-        [2, ['L1', 'lamp', 0], ['L2', 'lamp', 2]],
-        [1, ['L1', 'lamp', 0], ['M1', 'motor', 0]],
-        [3, ['L1', 'lamp', 1], ['L2', 'lamp', 1]]
-      ]);
-      return { circuit: lock(loop1(d[0], d[1], d[2])), rows: [rowU(d[1][0]), rowU(d[2][0]), rowI('G1', 'Intensité dans le circuit')] };
+      var d = drawCircuit('loop1'), n = d.names;
+      return { circuit: lock(d.circuit), rows: [rowU(n[0]), rowU(n[1]), rowI('G1', 'Intensité dans le circuit')] };
     },
     function () {
-      var d = pick([[1, ['L1', 'lamp', 1], ['M1', 'motor', 1]], [3, ['L1', 'lamp', 2], ['M1', 'motor', 2]], [0, ['L1', 'lamp', 0], ['M1', 'motor', 0]]]);
-      var X = d[1][0], Y = d[2][0];
-      return {
-        circuit: lock(loop2(d[0], d[1], d[2])),
-        rows: [rowU(X), rowU(Y), rowI('G1', 'Intensité à la sortie du générateur'), rowI(Y, 'Intensité qui traverse ' + Y)]
-      };
+      var d = drawCircuit('loop2'), n = d.names, Z = pick(n);
+      return { circuit: lock(d.circuit), rows: [rowU(n[0]), rowU(n[1]), rowI('G1', 'Intensité à la sortie du générateur'), rowI(Z, 'Intensité qui traverse ' + Z)] };
     },
     function () {
-      var d = pick([[1, ['L1', 'lamp', 1], ['L2', 'lamp', 0], ['L3', 'lamp', 0]], [3, ['M1', 'motor', 2], ['L1', 'lamp', 1], ['L2', 'lamp', 1]]]);
-      var S = d[1][0], P = d[2][0], Q = d[3][0];
-      return {
-        circuit: lock(loop2s(d[0], d[1], d[2], d[3])),
-        rows: [rowU(P), rowU(Q), rowI('G1', 'Intensité à la sortie du générateur'), rowI(S, 'Intensité qui traverse ' + S), rowI(P, 'Intensité entre ' + P + ' et ' + Q)]
-      };
+      var d = drawCircuit('loop2s'), S = d.names[0], P = d.names[1], Q = d.names[2];
+      var rows = [rowU(P), rowU(Q), rowU(S), rowI('G1', 'Intensité à la sortie du générateur'), rowI(S, 'Intensité qui traverse ' + S), rowI(P, 'Intensité entre ' + P + ' et ' + Q)];
+      rows.splice(Math.floor(Math.random() * rows.length), 1);   // cinq mesures parmi six
+      return { circuit: lock(d.circuit), rows: rows };
     }
   ];
 
@@ -505,33 +675,52 @@ window.ChallengeData = (function () {
     var unit = meter.type === 'voltmeter' ? 'V' : 'mA';
     return { k: meter.name, label: label, unit: unit, tol: unit === 'V' ? .06 : 3, expect: function (lab) { var v = lab.state(meter.name).value; return unit === 'V' ? v : v * 1000; } };
   }
-  var G3_DEDUCE = [
-    function () {
-      return pick([
-        function () { var m = [V('V1', 'G1', [0, -1]), V('V2', 'L1', [0, 1]), V('V3', 'L2', [0, 1], true)]; return { circuit: withMeters(loop1(2, ['L1', 'lamp', 0], ['L2', 'lamp', 2]), m), rows: [hiddenRow(m[2], 'Tension aux bornes de L2')] }; },
-        function () { var m = [V('V1', 'G1', [0, -1]), V('V2', 'L1', [0, 1]), V('V3', 'M1', [0, 1], true)]; return { circuit: withMeters(loop1(1, ['L1', 'lamp', 0], ['M1', 'motor', 0]), m), rows: [hiddenRow(m[2], 'Tension aux bornes de M1')] }; },
-        function () { var m = [A('A1', 'G1.0', 'L1.0'), A('A2', 'L1.1', 'L2.0', true)]; return { circuit: withMeters(loop1(3, ['L1', 'lamp', 1], ['L2', 'lamp', 1]), m), rows: [hiddenRow(m[1], 'Intensité entre L1 et L2')] }; }
-      ])();
+  // Emplacements des appareils pour chaque forme : voltmètres (dipôle, côté libre), ampèremètres (fil remplacé, intitulé)
+  // v / i : [emplacements visibles, emplacement caché] ; la tension du générateur n'est jamais cachée (elle est affichée sur lui)
+  var SPOTS = {
+    loop1: function (a, b) {
+      return {
+        V: { G: ['G1', [0, -1]], a: [a, [0, 1]], b: [b, [0, 1]] },
+        I: { in: ['G1.0', a + '.0', 'Intensité à la sortie du générateur'], mid: [a + '.1', b + '.0', 'Intensité entre ' + a + ' et ' + b], out: [b + '.1', 'G1.1', 'Intensité qui revient au générateur'] },
+        v: [[['G', 'a'], 'b'], [['G', 'b'], 'a']],
+        i: [[['in'], 'mid'], [['in'], 'out'], [['mid'], 'in'], [['mid'], 'out'], [['out'], 'in'], [['out'], 'mid']]
+      };
     },
-    function () {
-      return pick([
-        function () { var m = [A('A1', 'G1.0', 'L1.0'), A('A2', 'L1.1', 'G1.1'), A('A3', 'L1.0', 'M1.0', true)]; return { circuit: withMeters(loop2(1, ['L1', 'lamp', 1], ['M1', 'motor', 1]), m), rows: [hiddenRow(m[2], 'Intensité qui traverse M1')] }; },
-        function () { var m = [V('V1', 'G1', [0, -1]), V('V2', 'M1', [0, 1], true)]; return { circuit: withMeters(loop2(3, ['L1', 'lamp', 2], ['M1', 'motor', 2]), m), rows: [hiddenRow(m[1], 'Tension aux bornes de M1')] }; },
-        function () { var m = [A('A1', 'G1.0', 'L1.0', true), A('A2', 'L1.1', 'G1.1'), A('A3', 'L1.0', 'M1.0')]; return { circuit: withMeters(loop2(0, ['L1', 'lamp', 0], ['M1', 'motor', 0]), m), rows: [hiddenRow(m[0], 'Intensité à la sortie du générateur')] }; }
-      ])();
+    loop2: function (x, y) {
+      return {
+        V: { G: ['G1', [0, -1]], y: [y, [0, 1]] },
+        I: { in: ['G1.0', x + '.0', 'Intensité à la sortie du générateur'], x: [x + '.1', 'G1.1', 'Intensité qui traverse ' + x], y: [x + '.0', y + '.0', 'Intensité qui traverse ' + y] },
+        v: [[['G'], 'y']],
+        i: [[['x', 'y'], 'in'], [['in', 'x'], 'y'], [['in', 'y'], 'x']]
+      };
     },
-    function () {
-      return pick([
-        function () {
-          var m = [V('V1', 'G1', [0, -1]), V('V2', 'L2', [0, -1]), V('V3', 'L3', [0, -1], true), A('A1', 'G1.0', 'L2.0'), A('A2', 'L2.0', 'L1.0'), A('A3', 'L2.1', 'L3.0', true)];
-          return { circuit: withMeters(loop2s(1, ['L1', 'lamp', 1], ['L2', 'lamp', 0], ['L3', 'lamp', 0]), m), rows: [hiddenRow(m[2], 'Tension aux bornes de L3'), hiddenRow(m[5], 'Intensité entre L2 et L3')] };
-        },
-        function () {
-          var m = [V('V1', 'G1', [0, -1]), V('V2', 'M1', [0, 1], true), A('A1', 'G1.0', 'L1.0'), A('A2', 'L1.0', 'M1.0', true), A('A3', 'L1.1', 'L2.0')];
-          return { circuit: withMeters(loop2s(3, ['M1', 'motor', 2], ['L1', 'lamp', 1], ['L2', 'lamp', 1]), m), rows: [hiddenRow(m[1], 'Tension aux bornes de M1'), hiddenRow(m[3], 'Intensité qui traverse M1')] };
-        }
-      ])();
+    loop2s: function (s, p, q) {
+      return {
+        V: { G: ['G1', [0, -1]], p: [p, [0, -1]], q: [q, [0, -1]], s: [s, [0, 1]] },
+        I: { in: ['G1.0', p + '.0', 'Intensité à la sortie du générateur'], s: [p + '.0', s + '.0', 'Intensité qui traverse ' + s], pq: [p + '.1', q + '.0', 'Intensité entre ' + p + ' et ' + q], out: [q + '.1', 'G1.1', 'Intensité qui revient au générateur'] },
+        v: [[['G', 'p'], 'q'], [['G', 'q'], 'p'], [['s', 'p'], 'q'], [['s', 'q'], 'p'], [['p', 'q'], 's'], [['G'], 's']],
+        i: [[['in', 's'], 'pq'], [['in', 'pq'], 's'], [['s', 'pq'], 'in'], [['s', 'pq'], 'out'], [['out', 's'], 'pq'], [['out', 'pq'], 's']]
+      };
     }
+  };
+  // kinds : grandeurs à cacher ('v' tension, 'i' intensité), une inconnue par grandeur
+  function deduce(shape, kinds) {
+    var d = drawCircuit(shape, true), sp = SPOTS[shape].apply(null, d.names), meters = [], rows = [], nv = 0, na = 0;
+    kinds.forEach(function (kind) {
+      var plan = pick(sp[kind]);
+      plan[0].concat([plan[1]]).forEach(function (key, j) {
+        var hide = j === plan[0].length, m;
+        if (kind === 'v') { m = V('V' + (++nv), sp.V[key][0], sp.V[key][1], hide); if (hide) rows.push(hiddenRow(m, 'Tension aux bornes de ' + sp.V[key][0])); }
+        else { m = A('A' + (++na), sp.I[key][0], sp.I[key][1], hide); if (hide) rows.push(hiddenRow(m, sp.I[key][2])); }
+        meters.push(m);
+      });
+    });
+    return { circuit: withMeters(d.circuit, meters), rows: rows };
+  }
+  var G3_DEDUCE = [
+    function () { return deduce('loop1', [pick(['v', 'i'])]); },
+    function () { return deduce('loop2', [pick(['v', 'i', 'i'])]); },
+    function () { return deduce('loop2s', ['v', 'i']); }
   ];
 
   // Construction précise : pièces fournies (réglages bloqués), valeurs de fonctionnement à obtenir
@@ -550,28 +739,58 @@ window.ChallengeData = (function () {
     list.forEach(function (p, i) { els.push(E(p[0], p[1], (i % cols - (cols - 1) / 2) * 140, 120 + Math.floor(i / cols) * 110, p[2])); });
     return { els: els, wires: [] };
   }
-  var G3_BUILD = [
-    function () {
-      return pick([
-        { gen: 2, parts: [['L1', 'lamp', 0], ['L2', 'lamp', 2]], targets: [['L1', 'U', 1], ['L2', 'U', 8]] },
-        { gen: 1, parts: [['L1', 'lamp', 1], ['M1', 'motor', 1]], targets: [['L1', 'U', 6], ['M1', 'U', 6], ['G1', 'I', 400]] },
-        { gen: 3, parts: [['L1', 'lamp', 1], ['L2', 'lamp', 1]], targets: [['L1', 'U', 6], ['L2', 'U', 6], ['G1', 'I', 100]] }
-      ]);
-    },
-    function () {
-      return pick([
-        { gen: 1, parts: [['L1', 'lamp', 1], ['L2', 'lamp', 0], ['L3', 'lamp', 0]], targets: [['L1', 'U', 6], ['L2', 'U', 3], ['L3', 'U', 3], ['G1', 'I', 300]] },
-        { gen: 3, parts: [['M1', 'motor', 2], ['L1', 'lamp', 1], ['L2', 'lamp', 1]], targets: [['M1', 'U', 12], ['L1', 'U', 6], ['L2', 'U', 6], ['G1', 'I', 350]] }
-      ]);
-    },
-    function () {
-      return pick([
-        { gen: 3, parts: [['L1', 'lamp', 2], ['L2', 'lamp', 1], ['L3', 'lamp', 1], ['M1', 'motor', 2]], targets: [['L1', 'U', 12], ['L2', 'U', 6], ['L3', 'U', 6], ['M1', 'U', 12], ['G1', 'I', 450]] },
-        { gen: 3, parts: [['L1', 'lamp', 1], ['L2', 'lamp', 1], ['L3', 'lamp', 0], ['L4', 'lamp', 0], ['L5', 'lamp', 0], ['L6', 'lamp', 0]], targets: [['L1', 'U', 6], ['L2', 'U', 6], ['L3', 'U', 3], ['L4', 'U', 3], ['L5', 'U', 3], ['L6', 'U', 3], ['G1', 'I', 300]] },
-        { gen: 1, parts: [['L1', 'lamp', 1], ['L2', 'lamp', 0], ['L3', 'lamp', 0], ['M1', 'motor', 0], ['M2', 'motor', 0]], targets: [['L1', 'U', 6], ['L2', 'U', 3], ['L3', 'U', 3], ['M1', 'U', 3], ['M2', 'U', 3], ['G1', 'I', 500]] }
-      ]);
-    }
-  ];
+  // Circuit modèle (branches de récepteurs) → pièces mélangées et valeurs à obtenir (tension de chaque dipôle, intensité si elle tombe juste)
+  function precise(U, br) {
+    var s = solve(U, br), nm = namer(), list = shuffle(s.parts).map(function (p) { return { name: nm(p.k.t), p: p }; });
+    var targets = list.slice().sort(function (a, b) { return a.name < b.name ? -1 : 1; }).map(function (x) { return [x.name, 'U', +x.p.U.toFixed(2)]; });
+    if (exact(s.I * 1000, 1)) targets.push(['G1', 'I', Math.round(s.I * 1000)]);
+    // sol : noms des récepteurs branche par branche (montage modèle, pour les tests)
+    var sol = br.map(function (b, j) { return list.filter(function (x) { return x.p.br === j; }).map(function (x) { return x.name; }); });
+    return { gen: GEN_V.indexOf(U), parts: list.map(function (x) { return [x.name, x.p.k.t, x.p.k.o]; }), targets: targets, sol: sol };
+  }
+  // Branches possibles où chaque récepteur fonctionne à son régime nominal (même intensité nominale, tensions qui s'additionnent)
+  function nominalBranches(U, maxLen) {
+    var out = [];
+    for (var n = 1; n <= maxLen; n++) seqs(n).forEach(function (c) {
+      var sortedOk = c.every(function (k, i) { return !i || KINDS.indexOf(c[i - 1]) <= KINDS.indexOf(k); });
+      if (sortedOk && within(U, [c], 1, 1)) out.push(c);
+    });
+    return out;
+  }
+  var buildCache = {};
+  function buildList(level) {
+    if (buildCache[level]) return buildCache[level];
+    var list = [];
+    GEN_V.forEach(function (U) {
+      if (level === 0) {
+        // Deux récepteurs, en série ou en dérivation, valeurs exactes
+        seqs(2).forEach(function (c) {
+          [[c], [[c[0]], [c[1]]]].forEach(function (br) {
+            var s = solve(U, br);
+            if (within(U, br, .3, 1.1) && s.parts.every(function (p) { return exact(p.U, 10); })) list.push({ U: U, br: br });
+          });
+        });
+        return;
+      }
+      var opts = nominalBranches(U, 4);
+      if (level === 1) {
+        // Un récepteur seul en dérivation de deux récepteurs en série
+        opts.forEach(function (a) { opts.forEach(function (b) { if (a.length === 1 && b.length === 2) list.push({ U: U, br: [b, a] }); }); });
+        return;
+      }
+      // Quatre à six récepteurs sur deux ou trois branches, dont au moins une avec plusieurs récepteurs
+      for (var i = 0; i < opts.length; i++) for (var j = i; j < opts.length; j++) {
+        [null].concat(opts.slice(j)).forEach(function (c) {
+          var br = [opts[i], opts[j]].concat(c ? [c] : []), n = br.reduce(function (s, b) { return s + b.length; }, 0);
+          if (n >= 4 && n <= 6 && br.some(function (b) { return b.length > 1; }) && solve(U, br).I <= 1.0001) list.push({ U: U, br: br });
+        });
+      }
+    });
+    return (buildCache[level] = list);
+  }
+  var G3_BUILD = [0, 1, 2].map(function (level) {
+    return function () { var d = pick(buildList(level)); return precise(d.U, d.br); };
+  });
 
   /* ================= Fabrication d'une partie (27 missions) ================= */
   var TITLES = [
@@ -585,7 +804,8 @@ window.ChallengeData = (function () {
   ];
   function mission(g, k) {
     var gr = GROUPS[g], row = Math.floor(k / 3), col = k % 3;
-    var m = { g: g, k: k, points: gr.points[row], malus: gr.malus, tag: gr.tags[row], title: TITLES[g][k], group: gr.name };
+    // Points : constants sur une colonne, croissants avec la difficulté (★ à ★★★, de gauche à droite)
+    var m = { g: g, k: k, points: gr.points[col], stars: col + 1, malus: gr.malus, tag: gr.tags[row], title: TITLES[g][k], group: gr.name };
     if (g === 0) {
       m.lab = G1_LAB;
       if (row === 0) {
@@ -646,10 +866,11 @@ window.ChallengeData = (function () {
         var b = G3_BUILD[col]();
         m.lab = { ideal: false, palette: ['voltmeter', 'ammeter', 'ohmmeter'], stock: METERS1, fixedTypes: ALL_TYPES };
         m.circuit = parts(b.gen, b.parts);
+        m.solution = b.sol;
         m.criteria = b.targets.map(function (x) { return target(x[0], x[1], x[2]); });
         m.panel = {
           kind: 'spec', title: 'Valeurs à obtenir',
-          lines: ['Générateur G1 bloqué sur ' + OPT_V[b.gen] + ' V ; réglages des dipôles bloqués.'].concat(m.criteria.map(function (x) { return x.text; }))
+          lines: ['Générateur G1 bloqué sur ' + GEN_V[b.gen] + ' V ; réglages des dipôles bloqués.'].concat(m.criteria.map(function (x) { return x.text; }))
         };
         m.intro = 'Avec uniquement les pièces fournies, construis un circuit qui donne exactement les valeurs de fonctionnement demandées.';
         m.task = 'Construis le circuit qui donne les valeurs demandées.';
