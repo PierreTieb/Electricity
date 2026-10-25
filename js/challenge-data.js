@@ -886,11 +886,11 @@ window.ChallengeData = (function () {
 
   var MEDALS = [
     { min: 115, id: 'platine', name: 'de platine' },
-    { min: 100, id: 'or', name: 'd\'or' },
-    { min: 70, id: 'argent', name: 'd\'argent' },
+    { min: 85, id: 'or', name: 'd\'or' },
+    { min: 65, id: 'argent', name: 'd\'argent' },
     { min: 40, id: 'bronze', name: 'de bronze' }
   ];
   function medal(score) { for (var i = 0; i < MEDALS.length; i++) if (score >= MEDALS[i].min) return MEDALS[i]; return null; }
 
-  return { GROUPS: GROUPS, generate: generate, helpers: helpers, schemaSpec: schemaSpec, schemaCriteria: schemaCriteria, medal: medal };
+  return { GROUPS: GROUPS, generate: generate, helpers: helpers, schemaSpec: schemaSpec, schemaCriteria: schemaCriteria, medal: medal, MEDALS: MEDALS };
 })();

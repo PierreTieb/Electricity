@@ -5,7 +5,14 @@ window.Challenge = (function () {
   var $ = function (id) { return document.getElementById(id); };
 
   /* ---------- Meilleur score mémorisé dans le navigateur ---------- */
-  function readBest() { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } }
+  // La médaille est recalculée depuis le score : un ancien record suit les seuils actuels
+  function readBest() {
+    try {
+      var b = JSON.parse(localStorage.getItem(KEY));
+      if (b && typeof b.score === 'number') { var md = D.medal(b.score), id = md ? md.id : null; if (b.medal !== id) { b.medal = id; writeBest(b); } }
+      return b;
+    } catch (e) { return null; }
+  }
   function writeBest(v) { try { localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) { } }
   function pts(n) { return n + ' point' + (Math.abs(n) > 1 ? 's' : ''); }
   function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
@@ -287,7 +294,7 @@ window.Challenge = (function () {
     if (lab) { lab.destroy(); lab = null; }
     var sc = score(), md = D.medal(sc), list = recap(), best = readBest(), record = !best || sc > best.score;
     if (record) writeBest({ score: sc, medal: md ? md.id : null, date: new Date().toISOString(), recap: list });
-    var nextMd = [40, 70, 100, 115].filter(function (x) { return x > sc; })[0];
+    var nextMd = D.MEDALS.map(function (m) { return m.min; }).filter(function (x) { return x > sc; }).pop();
     $('ch-results').innerHTML =
       (md && md.id === 'platine' ? '<div class="ch-banner"><span>Champion de l\'électricité !</span></div>' : '') +
       medalHtml(md, true) +
@@ -304,6 +311,8 @@ window.Challenge = (function () {
   function message(md, nextMd, sc) {
     if (!md) return 'Il te manque ' + pts(nextMd - sc) + ' pour la médaille de bronze. Choisis bien tes missions et vérifie avant de proposer !';
     if (md.id === 'platine') return 'Score exceptionnel ! Tu maîtrises les circuits, les mesures et les lois de l\'électricité. Félicitations !';
+    // Pas d'annonce de la médaille suivante après l'or : le platine reste une surprise
+    if (md.id === 'or') return 'Excellent travail ! Tes circuits et tes mesures sont maîtrisés. Félicitations !';
     return 'Bravo ! Encore ' + pts(nextMd - sc) + ' et tu décroches la médaille suivante.';
   }
   function showBestRecap() {
