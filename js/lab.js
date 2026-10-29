@@ -1542,6 +1542,13 @@ window.Lab = (function () {
         var e = byName(n);
         return e ? links().filter(function (l) { return (l.a.el === e.id && l.a.i === i) || (l.b.el === e.id && l.b.i === i); }).length : 0;
       },
+      // Autres dipôles dont une borne est reliée par des fils (ou des ampèremètres) à une borne de n
+      around: function (n) {
+        var e = byName(n);
+        if (!e) return [];
+        var net = nets(false), mine = [net(e, 0), net(e, 1)];
+        return dipoles().filter(function (d) { return d !== e && (mine.indexOf(net(d, 0)) >= 0 || mine.indexOf(net(d, 1)) >= 0); }).map(function (d) { return d.name; });
+      },
       // Deux dipôles sont-ils reliés directement par un fil (ou un ampèremètre) ?
       linked: function (n1, n2) {
         var a = byName(n1), b = byName(n2);
@@ -1635,6 +1642,7 @@ window.Lab = (function () {
             lab.state('V1') → { attached, value, text, on: 'M1' } ; lab.state('A1') → { ..., between: ['M1.1', 'M2.0'] }
             lab.lock(['M1', 'wires'], false) → libère des éléments (ou tous les fils) en cours de route
             lab.wiresAt('G1', 0) → nombre de fils sur une borne ; lab.linked('L2', 'L3') → reliés directement par un fil
+            lab.around('L1') → autres dipôles reliés par des fils aux bornes de L1
             lab.rename({ L3: 'L1', L1: 'L3' }) → renomme des éléments (échanges permis)
             lab.simulate({ closed: { K1: false }, removed: { L2: true } }) → état de chaque dipôle dans cette situation, sans rien changer à l'écran
   Réglages en direct : lab.set({ schema, current, electrons, readOnly, hideValues, palette, stock, toggles })
