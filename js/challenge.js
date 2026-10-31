@@ -63,6 +63,8 @@ window.Challenge = (function () {
     var sub = $('btn-challenge').querySelector('.mode-btn__best');
     sub.textContent = b ? 'Meilleur score : ' + pts(b.score) : '';
     sub.hidden = !b;
+    // À droite du bouton : la médaille du meilleur score, ou le trophée tant qu'aucune médaille n'est gagnée
+    $('btn-challenge').querySelector('.mode-btn__trophy').innerHTML = md ? medalHtml(md).replace('class="medal ', 'class="medal medal--btn ') : '🏆';
   }
   function toggle(i) {
     var n = picked.indexOf(i);

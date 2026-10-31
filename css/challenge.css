@@ -177,6 +177,12 @@
   text-shadow: 0 -2px 0 var(--m1), 0 2px 0 var(--m4), 0 0 14px rgba(255,255,255,.8);
 }
 .medal--big .medal__star { font-size: 5rem; }
+/* Petite médaille sur le bouton Challenge de l'accueil (meilleur score) */
+.medal--btn { width: 46px; height: 58px; margin: 0; }
+.medal--btn .medal__disc { box-shadow: 0 0 0 2px var(--m3), 0 0 0 3px var(--m1), 0 0 0 4px var(--m4), 0 4px 8px rgba(0,0,0,.3), 0 0 14px var(--m2); }
+.medal--btn .medal__ring { box-shadow: inset 0 1px 3px rgba(0,0,0,.35), inset 0 -1px 2px rgba(255,255,255,.7), 0 0 0 1px var(--m1); }
+.medal--btn .medal__star { font-size: 1.2rem; text-shadow: 0 -1px 0 var(--m1), 0 1px 0 var(--m4); }
+.medal--btn .medal__spark { display: none; }
 /* Reflet qui balaie la médaille en permanence */
 .medal__shine {
   position: absolute; inset: -20%; pointer-events: none;
